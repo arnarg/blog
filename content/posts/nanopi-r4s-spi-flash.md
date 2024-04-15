@@ -10,6 +10,7 @@ tags:
   - pcb
 discuss:
   hackernews: https://news.ycombinator.com/item?id=39931047
+  reddit: https://www.reddit.com/r/SBCs/comments/1c4mva5/making_nanopi_r4s_booting_sane_with_spi_flash/
 ---
 
 There's one thing I really don't like about many popular ARM SBCs (Single Board Computers) that for some reason has been deemed acceptable and that is the lack of on-board flash for storing the bootloader. This means that the bootloader (most often u-boot) needs to be written to a specific location on the SD card or eMMC (if available). Generally distributions for such boards offer an image for download that can be written as is to the boot medium, including the bootloader, requiring such images to be created for _each supported SBC_. Wouldn't it be nice if we could just pop in a generic installer USB stick where we can partition the drive as needed before installing, like is done with generic x86 computers?
