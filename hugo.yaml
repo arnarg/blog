@@ -12,6 +12,7 @@ markup:
     style: gruvbox
 
 params:
+  og_image: /favicon.png
   socials:
     github: arnarg
     linkedin: arnari
