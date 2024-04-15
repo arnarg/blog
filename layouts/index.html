@@ -1,0 +1,12 @@
+{{ define "main" }}
+<main>
+  <section>
+    {{ $paginator := .Paginate (where (where .Site.RegularPages "Type" "posts") ".Params.hidden" "!=" "true") }}
+    {{ range $paginator.Pages }}
+    {{ .Render "li" }}
+    {{ end }}
+    {{ partial "paginator.html" $paginator }}
+  </section>
+</main>
+{{ end }}
+

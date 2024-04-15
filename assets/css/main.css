@@ -1,0 +1,27 @@
+@import "fonts.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+article {
+	@apply prose
+	       prose-stone
+	       leading-relaxed
+	       dark:prose-invert
+	       prose-headings:text-inherit
+	       prose-headings:font-normal
+	       prose-img:mx-auto
+	       prose-img:rounded
+	       prose-a:text-sky-700
+	       hover:prose-a:text-sky-900
+	       dark:prose-a:text-sky-300
+	       dark:hover:prose-a:text-sky-500;
+}
+
+/* Overwrite prism theme font with mono set in tailwind config */
+code[class*="language-"],
+pre[class*="language-"] {
+	@apply !font-mono;
+}
+

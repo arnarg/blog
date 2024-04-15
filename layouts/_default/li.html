@@ -1,0 +1,16 @@
+<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
+  <header>
+    <h2 class="my-6">
+      <a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="{{ .Permalink }}">{{ .Title }}</a>
+    </h2>
+    <p class="mb-2 text-stone-900 dark:text-stone-200">
+      Posted on {{ time.Format (":date_medium") .Date }}
+    </p>
+  </header>
+  <div>
+    {{ .Summary | plainify | safeHTML }}
+  </div>
+  <div class="my-4">
+    <a href="{{ .Permalink }}">Read more ></a>
+  </div>
+</article>
