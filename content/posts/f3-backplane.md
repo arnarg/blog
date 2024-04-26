@@ -8,6 +8,7 @@ tags:
   - pcb
 discuss:
   hackernews: https://news.ycombinator.com/item?id=40169256
+  reddit: https://www.reddit.com/r/TerraMaster/comments/1cdlrxs/i_made_a_new_backplane_for_my_terramaster_f2221/
 ---
 
 In a [previous post](https://codedbearder.com/posts/nixos-terramaster-f2-221) I wrote about how I setup NixOS on my Terramaster F2-221 instead of using the included TOS provided by Terramaster. This in itself was quite simple as the NAS contains Intel J3355, a standard X86_64 CPU. However the NAS only has 2 SATA connectors, both of which were being used for the 4TB hard drives, so I had to resort to plugging in an external USB SSD for storing the operating system. This quickly became a little annoying to make room for this external SSD behind the NAS and make sure it's always plugged in when something is moved around in the shelf where I keep it, so I wanted to see if I could come up with a better solution.
