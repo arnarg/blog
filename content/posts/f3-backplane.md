@@ -137,6 +137,12 @@ So you don't need to scroll up again here's a picture of the final version!
 
 ![Picture of the final version of the backplane PCB mounted in the NAS.](/images/posts/f3-backplane/f3-backplane-hero.jpg)
 
+![Picture of the front of the new backplane PCB next to the original one.](/images/posts/f3-backplane/f3-comparison-front.jpg)
+
+![Picture of the back of the new backplane PCB next to the original one.](/images/posts/f3-backplane/f3-comparison-back.jpg)
+
+> The soldering of the SATA connectors is kind of rough because I had forgotten to add thermal reliefs to the internal ground plane, making soldering very difficult. This has been fixed in the GitHub repository.
+
 hdparm test results for the NVMe SSD:
 
 ```
