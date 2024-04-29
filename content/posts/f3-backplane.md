@@ -7,7 +7,7 @@ tags:
   - hardware
   - pcb
 discuss:
-  hackernews: https://news.ycombinator.com/item?id=40169256
+  hackernews: https://news.ycombinator.com/item?id=40199967
   reddit: https://www.reddit.com/r/TerraMaster/comments/1cdlrxs/i_made_a_new_backplane_for_my_terramaster_f2221/
 ---
 
