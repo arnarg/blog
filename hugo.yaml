@@ -1,6 +1,7 @@
 baseURL: https://codedbearder.com/
 languageCode: en-us
 title: codedbearder
+copyright: © Arnar Gauti Ingason
 
 paginate: 6
 

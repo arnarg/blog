@@ -4,6 +4,9 @@
 <meta name="msapplication-TileColor" content="#da532c">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/favicon.png" />
+{{ with .OutputFormats.Get "rss" -}}
+<link rel="{{ .Rel }}" type="{{ .MediaType.Type }}" href="{{ .Permalink }}" title="{{ site.Title }}">
+{{ end }}
 {{ partial "meta" . }}
 {{ if .Site.IsServer }}
 {{ $styles := resources.Get "/css/style.css" }}
