@@ -23,13 +23,13 @@ There's one thing I really don't like about many popular ARM SBCs (Single Board 
 
 > ... a user-friendly, opinionated distribution of U-Boot, where there is as few differences in features possible between boards, and a "familiar" user interface for an early boot process tool.
 
-And this is really nice as it decouples installation of firmware from the operating system, at least when the 2 can be written to a different medium. Some SBCs do come with SPI flash onboard such as many pine64 and radxa devices, as well as my Odroid N2s. What this means is that Tow-Boot (or regular U-Boot) can be written to this SPI flash where it will be read from during boot and then the operating system (or USB installer image) can be then read an booted.
+And this is really nice as it decouples installation of firmware from the operating system, at least when the 2 can be written to a different medium. Some SBCs do come with SPI flash onboard such as many pine64 and radxa devices, as well as my Odroid N2s. What this means is that Tow-Boot (or regular U-Boot) can be written to this SPI flash where it will be read from during boot and then the operating system (or USB installer image) can be then read and booted.
 
 That brings me to...
 
 ## NanoPI R4S
 
-My [NanoPI R4S](https://www.friendlyelec.com/index.php?route=product/product&product_id=284) has been a bit of a black sheep in my small fleet of SBCs, where for a long time it was only kept in my drawer due to the pain of managing the bootloader on an SD card. Now I've got to clarify that I'm fully capable of building the bootloader and write to the correct location on the SD card, it's just that I don't particularly want to relay on that as it can be accidentally overwritten when formatting the drive for example.
+My [NanoPI R4S](https://www.friendlyelec.com/index.php?route=product/product&product_id=284) has been a bit of a black sheep in my small fleet of SBCs, where for a long time it was only kept in my drawer due to the pain of managing the bootloader on an SD card. Now I've got to clarify that I'm fully capable of building the bootloader and write to the correct location on the SD card, it's just that I don't particularly want to rely on that as it can be accidentally overwritten when formatting the drive for example.
 
 So when I was researching my options I noticed that the GPIO header on the board exposes SPI1 which just so happens to be the first location the RK3399 tries to load the bootloader from. If only I can get a NOR flash chip attached to this header, I might just be a little bit happier when using this SBC.
 
