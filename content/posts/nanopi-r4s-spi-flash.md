@@ -58,14 +58,16 @@ When it comes to the actual schematic and PCB design, there's not much to it. Ju
 
 Now we have added a NOR flash chip to SPI1 but the config for this board in U-Boot doesn't include any support for a NOR flash and even worse, there isn't even any support for this board in Tow-Boot!
 
-The latter is very easily added as all board definitions in Tow-Boot are defined in nix and there were previous boards supported with RK3399 that I could look at for reference. I have opened a [pull request](https://github.com/Tow-Boot/Tow-Boot/pull/296) in order to get this added upstream, and there seems to be _some_ activity on it but time will tell if it gets merged. This does not include support for my SPI flash module. This I have on a [branch in my fork of Tow-Boot](https://github.com/arnarg/Tow-Boot/tree/board/nanopi-r4s-spi) as I think this can't be easily upstreamed.
+The latter is very easily added as all board definitions in Tow-Boot are defined in nix and there were previous boards supported with RK3399 that I could look at for reference. I have opened a [pull request](https://github.com/Tow-Boot/Tow-Boot/pull/296) in order to get this added upstream which has been merged and will most likely be available in the next release after `2023.07-007`. This does not include support for my SPI flash module. This I have in a [custom Tow-Boot build repository](https://github.com/arnarg/tow-boot-custom) as I think this can't be easily upstreamed.
 
 So the installation to the SPI flash involves:
 
-1. Checkout my [custom branch](https://github.com/arnarg/Tow-Boot/tree/board/nanopi-r4s-spi) in my Tow-Boot fork.
-2. Run `nix-build -A friendlyElec-nanoPiR4S` (nix instructions not included).
+1. Checkout my [custom Tow-Boot build](https://github.com/arnarg/tow-boot-custom).
+2. Run `nix-build -A friendlyElec-nanoPiR4S-SPI` (nix install instructions not included).
 3. Burn the resulting `./result/spi.installer.img` to an SD card (`dd if=./result/spi.installer.img of=/dev/sdX bs=1M oflag=direct,sync status=progress`).
 4. Boot from the SD card while attached to the serial port header on the NanoPI R4S and there should be presented to you the option to erase and flash the SPI NOR flash.
+
+> Alternatively you can download the pre-built `spi.installer.img` from the [GitHub release](https://github.com/arnarg/tow-boot-custom/releases/tag/2023.07-007) in my repository.
 
 ### Persistent MAC addresses
 
