@@ -74,10 +74,8 @@ U-Boot has its own device tree for the device compiled and included with the boo
 Use the following commands in the U-Boot console to set yours:
 
 ```sh
-env delete ethaddr
-env delete eth1addr
-env set ethaddr=aa:bb:cc:dd:ee:ff
-env set eth1addr=aa:bb:cc:dd:ee:fe
+env set -f ethaddr aa:bb:cc:dd:ee:ff
+env set -f eth1addr aa:bb:cc:dd:ee:fe
 env save
 ```
 
