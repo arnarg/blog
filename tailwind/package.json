@@ -1,33 +1,25 @@
 {
-  "name": "codedbeader blog",
+  "name": "codedbeader-blog-stylesheet",
   "version": "0.0.1",
-  "description": "Hugo theme for codedbeader.com",
+  "description": "Tailwind stylesheet for codedbeader.com",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently npm:watch:*",
-    "watch:tailwind": "tailwindcss -i ./assets/css/main.css -o ./assets/css/style.css --watch",
-    "watch:hugo": "hugo server -D -F",
-    "build": "hugo --minify",
-    "test": "hugo"
+    "build": "postcss css/main.css -o build/main.css"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/arnarg/blog.git"
   },
   "keywords": [
-    "hugo",
     "tailwind",
     "tailwindcss"
   ],
   "author": "Arnar Gauti Ingason",
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.10",
-    "alpinejs": "^3.13.7",
     "autoprefixer": "^10.4.18",
-    "concurrently": "^8.2.2",
     "postcss": "^8.4.35",
     "postcss-cli": "^11.0.0",
-    "prism-themes": "^1.9.0",
     "tailwindcss": "^3.4.1"
   }
 }

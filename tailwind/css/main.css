@@ -19,7 +19,10 @@ article {
 	       dark:hover:prose-a:text-sky-500;
 }
 
-/* Overwrite prism theme font with mono set in tailwind config */
+div[class="highlight"] {
+	border-radius: 6px;
+}
+
 code[class*="language-"],
 pre[class*="language-"] {
 	@apply !font-mono;
