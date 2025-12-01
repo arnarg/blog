@@ -374,11 +374,29 @@ in
             (div
               [
                 (attrs.classes [
-                  "py-8"
+                  "pt-8"
                   "text-sm"
                 ])
               ]
               [ metadata.copyright ]
+            )
+            (div
+              [
+                (attrs.classes [
+                  "py-8"
+                  "text-sm"
+                ])
+              ]
+              [
+                "This website is generated with "
+                (a
+                  [
+                    (attrs.classes [ "underline" ])
+                    (attrs.href "https://github.com/arnarg/nixtml")
+                  ]
+                  [ "nixtml" ]
+                )
+              ]
             )
           ];
 
