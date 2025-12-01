@@ -1,6 +1,2 @@
 node_modules/
-resources/
-/public/
-.hugo_build.lock
-style.css
 result
