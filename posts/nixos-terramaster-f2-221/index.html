@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			Running NixOS on a consumer NAS | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="Running NixOS on a consumer NAS | codedbearder">
+		<meta property="twitter:title" content="Running NixOS on a consumer NAS | codedbearder">
+		<meta itemprop="name" content="Running NixOS on a consumer NAS | codedbearder">
+		<meta name="application-name" content="Running NixOS on a consumer NAS | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						Running NixOS on a consumer NAS
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Feb 2, 2020
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/linux">
+							#linux
+						</a>
+						<a class="no-underline" href="/tags/nas">
+							#nas
+						</a>
+						<a class="no-underline" href="/tags/nixos">
+							#nixos
+						</a>
+						<a class="no-underline" href="/tags/plex">
+							#plex
+						</a>
+					</div>
+					<img class="rounded" src="/images/posts/nixos-terramaster-f2-221/f2-221-hero.jpg" alt="thumbnail">
+					<p>I have an old whitebox server sporting a Xeon E5 (v1) that I'd like to get rid of. It's running a handful of VMs on Proxmox. Most of them I can get rid of by moving their services to Kubernetes, but I wasn't sure what I wanted to do with my NAS VM and Plex server. The latter you can easily run in Kubernetes but I'm not planning on having particularly powerful nodes and I need transcoding.</p>
+					<!--more-->
+
+					<p>When I was looking at potential consumer NAS boxes I noticed in a teardown of <a href="https://www.terra-master.com/global/products/homesoho-nas/f2-221.html">Terramaster F2-221</a>
+						that there's an internal USB header with a USB stick running the OS which gave me hope of running any OS that I want on it (that and that it has a standard x86_64 Intel CPU). This may very well be the case with other NASes from other manufacturers but I'm not too familiar with it.</p>
+					<h3>The Hardware</h3>
+					<p>The Terramaster F2-221 has an Intel Celeron J3355 CPU and 2GB of DDR3 memory but has an unpopulated SODIMM slot so you can upgrade the memory. The J3355 has Intel HD Graphics 500 with Quick Sync support which makes it capable of Hardware-Accelerated Transcoding in Plex. Terramaster claims that it can do two simultaneous 4K streams but I have not put that to the test.</p>
+					<p>Opening it up is very simple, there's just 4 screws in the back of the unit that need to be unscrewed, even the screwdriver is included. After that you can unplug the fan and slide the aluminum shroud off the unit, revealing the motherboard. From there you can pop in extra RAM without unscrewing the motherboard. Terramaster does sell some "compatible" RAM on Amazon but I popped in a DDR3 1600MHz 4GB stick I had on hand and it worked perfectly fine.</p>
+					<h3>The Software</h3>
+					<p>The USB stick plugged into the internal header doesn't actually run the OS as it turns out. It just boots a minimal environment exposing a web server which you can navigate to to actually install Terramaster OS (TOS) by going through a fairly user friendly wizard.</p>
+					<p>It partitions your hard drives installed in the unit and raids them using mdadm, one for the operating system and one for the data storage (I'm writing this from memory, but that's the gist of it). On the raided data partition it uses btrfs.</p>
+					<p>Now, I already have a couple of drives that are formatted with btrfs in raid1 configuration. That means that I would need to wipe them to install TOS on there and then migrate my files back on to them. The installation wizard does display a warning about this.</p>
+					<p>For those reasons and that TOS is not that great for my requirements I decided to install my own NAS OS (this was my plan before buying the unit). I do however realize that I'm probably not the average user that would buy this and TOS does look fairly user friendly.</p>
+					<h2>Improving the software</h2>
+					<p>In my aformentioned NAS VM I'm running NixOS and it's been an absolute bliss. If you're not familiar with NixOS, it has a completely declarative approach to configuration management and has atomic upgrades and rollbacks. It does have it's own functional language, Nix, for configuring the system. You can configure the system without knowing much about Nix but it's totally worth learning if you want to get serious about NixOS. <a href="https://nixos.org/nixos/about.html">Read more about NixOS</a>.</p>
+					<p>For some reason the HDMI on the back of the Terramaster turns off after a few seconds after booting it (I can see the GRUB menu and the kernel boot log but then it turns off). This happened with any distro I tried so eventually I created a <a href="https://nixos.wiki/wiki/Creating_a_NixOS_live_CD">custom NixOS live CD</a>
+						that has a known root password and automatically starts an SSH server for me to connect to from another machine. From there I can do a <a href="https://nixos.org/nixos/manual/index.html#sec-installation">regular install of NixOS</a>.</p>
+					<p>You will need to add the following in the config for your custom live CD to enable the SSH server:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #DDD">.</span>openssh<span style="color: #DDD">.</span><span style="color: #B8BB26">enabled</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+systemd<span style="color: #DDD">.</span>services<span style="color: #DDD">.</span>sshd<span style="color: #DDD">.</span><span style="color: #B8BB26">wantedBy</span> <span style="color: #DDD">=</span> lib<span style="color: #DDD">.</span>mkOverride <span style="color: #D3869B">40</span> <span style="color: #DDD">[</span> <span style="color: #B8BB26">&quot;multi-user.target&quot;</span> <span style="color: #DDD">];</span>
+</code></pre></div>
+					<p>And you want to enable root login:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #DDD">.</span>openssh<span style="color: #DDD">.</span><span style="color: #B8BB26">permitRootLogin</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;yes&quot;</span><span style="color: #DDD">;</span>
+</code></pre></div>
+					<h3>Why is my CPU overheating?</h3>
+					<p>When opening the case and unplugging the fan you may notice that the fan is connected to a header marked on the PCB as <code>SYS_FAN2</code>. Well, a fan connected to this header does not spin up when the CPU heats up. It's only a 10W CPU but it can get quite hot if under load for a while uncooled. Naturally I turned to <code>lm_sensors</code>.</p>
+					<blockquote>
+						<p><code>nix-shell -p lm_sensors</code>
+						will give you a new shell where lm_sensors is installed and its executables in path. When you exit this shell none of lm_sensors' executables are in path and it will be removed completely from the system next time <code>nix-collect-garbage</code>
+						is run.</p>
+					</blockquote>
+					<p>Running <code>sensors-detect</code>
+						revealed that the Super I/O chip on the system is <code>IT8613E</code>
+						which the module <a href="https://github.com/hannesha/it87">it87</a>
+						thankfully does support. Modules <code>coretemp</code>
+						and <code>it87</code>
+						should be loaded and in NixOS that should be done by including the following in <code>/etc/nixos/configuration.nix</code>
+						and running <code>nixos-rebuild switch</code>.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>boot<span style="color: #DDD">.</span><span style="color: #B8BB26">extraModulePackages</span> <span style="color: #DDD">=</span> <span style="color: #FB4934">with</span> pkgs<span style="color: #DDD">.</span>linuxPackages<span style="color: #DDD">;</span> <span style="color: #DDD">[</span> it87 <span style="color: #DDD">];</span>
+boot<span style="color: #DDD">.</span><span style="color: #B8BB26">kernelModules</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span><span style="color: #B8BB26">&quot;coretemp&quot;</span> <span style="color: #B8BB26">&quot;it87&quot;</span><span style="color: #DDD">];</span>
+</code></pre></div>
+					<p>That gives us the ability to monitor CPU temperature and current fan speed. <code>lm_sensors</code>
+						however also includes a program called <code>fancontrol</code>
+						which is a bash script that periodically checks the CPU temperature and sets the fan speed accordingly. You can run <code>pwmcontrol</code>
+						to go through a wizard setting up the <code>fancontrol</code>
+						config and writing it in <code>/etc/fancontrol</code>. Mine is below, however you have to load <code>coretemp</code>
+						and <code>it87</code>
+						before any other <code>hwmon</code>
+						modules and in that order in order for it to work, so you might be better off running <code>pwmcontrol</code>
+						yourself.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #83A598">INTERVAL</span><span style="color: #DDD">=</span><span style="color: #D3869B">10</span>
+<span style="color: #83A598">DEVPATH</span><span style="color: #DDD">=</span><span style="color: #83A598">hwmon0</span><span style="color: #DDD">=</span>devices/platform/coretemp.0<span style="color: #DDD"> </span><span style="color: #83A598">hwmon1</span><span style="color: #DDD">=</span>devices/platform/it87.2592
+<span style="color: #83A598">DEVNAME</span><span style="color: #DDD">=</span><span style="color: #83A598">hwmon0</span><span style="color: #DDD">=</span>coretemp<span style="color: #DDD"> </span><span style="color: #83A598">hwmon1</span><span style="color: #DDD">=</span>it8613
+<span style="color: #83A598">FCTEMPS</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span>hwmon0/temp1_input
+<span style="color: #83A598">FCFANS</span><span style="color: #DDD">= </span>hwmon1/pwm3<span style="color: #DDD">=</span>hwmon1/fan3_input
+<span style="color: #83A598">MINTEMP</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">20</span>
+<span style="color: #83A598">MAXTEMP</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">60</span>
+<span style="color: #83A598">MINSTART</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">52</span>
+<span style="color: #83A598">MINSTOP</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">12</span>
+</code></pre></div>
+					<p>After that you can simply run <code>fancontrol</code>. Most distros provide a service file for systemd or whatever init system you're using. NixOS, however, doesn't so in your <code>/etc/nixos/configuration.nix</code>
+						you can include the following.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>systemd<span style="color: #DDD">.</span>services<span style="color: #DDD">.</span><span style="color: #B8BB26">fancontrol</span> <span style="color: #DDD">=</span> <span style="color: #DDD">{</span>
+  <span style="color: #B8BB26">enable</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+  <span style="color: #B8BB26">description</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;Fan control&quot;</span><span style="color: #DDD">;</span>
+  <span style="color: #B8BB26">wantedBy</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span><span style="color: #B8BB26">&quot;multi-user.target&quot;</span> <span style="color: #B8BB26">&quot;graphical.target&quot;</span> <span style="color: #B8BB26">&quot;rescue.target&quot;</span><span style="color: #DDD">];</span>
+
+  <span style="color: #B8BB26">unitConfig</span> <span style="color: #DDD">=</span> <span style="color: #DDD">{</span>
+    <span style="color: #B8BB26">Type</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;simple&quot;</span><span style="color: #DDD">;</span>
+  <span style="color: #DDD">};</span>
+
+  <span style="color: #B8BB26">serviceConfig</span> <span style="color: #DDD">=</span> <span style="color: #DDD">{</span>
+    <span style="color: #B8BB26">ExecStart</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;${</span>pkgs<span style="color: #DDD">.</span>lm_sensors<span style="color: #B8BB26">}/bin/fancontrol&quot;</span><span style="color: #DDD">;</span>
+    <span style="color: #B8BB26">Restart</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;always&quot;</span><span style="color: #DDD">;</span>
+  <span style="color: #DDD">};</span>
+<span style="color: #DDD">};</span>
+</code></pre></div>
+					<p>This will make <code>fancontrol</code>
+						start on boot and will spin up the fan under load.</p>
+					<h3>Lets control those HDD LEDs</h3>
+					<p>All the Terramaster NAS have 2-5 LEDs (depending on how many drives it takes) that indicate if a drive is installed or not. Each of the HDD LEDs are bi-color (red and green). When you boot this NAS into another distro than TOS you will notice that you have no way of controlling the LEDs.</p>
+					<p>In TOS you can install an SSH server, so after doing that and browsing the system a little bit I noticed that a kernel module called <code>led_drv_TMJ33</code>
+						was loaded. Even though this was looking promising, after looking for this module online I came up empty. Finally I decided to email their support asking for the source, because as far as I understand kernel modules distributed with products <a href="https://yarchive.net/comp/linux/gpl_modules.html">must be GPL compliant</a>. After a few emails back and forth they agreed to send me the source code.</p>
+					<p>This module was not all that well written. It creates char devices <code>/dev/leddrv[1-10]</code>
+						that you can write into <code>"led[1-10]on"</code>
+						and <code>"led[1-10]off"</code>. However they don't do any tracking on which char device the user is writing into, meaning <code>echo led2on &gt; /dev/leddrv5</code>
+						will actually turn on led2, so will <code>echo led2on &gt; /dev/leddrv3</code>. I didn't like that interface so I wrote my own module with the original one as reference on how to interface with the hardware.</p>
+					<p>My module creates char devices /dev/hddled[1-5]. Each device can only control a single LED. You can write [0-3] into them to control the LED in question. The source for my module can be found <a href="https://github.com/arnarg/hddled_tmj33">here</a>. There is a Makefile and dkms config in the repository so it should be able to be used in any distro, not just NixOS.</p>
+					<p>The values do the following:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>0 - OFF
+1 - GREEN
+2 - RED
+3 - BOTH (orange)
+</code></pre></div>
+					<p>So, running <code>echo 1 &gt; /dev/hddled2</code>
+						will turn LED 2 green. The module does not handle any detection of drives installed. This will have to be handled by a user space program that will write in appropriate hddled char devices.</p>
+					<h4>Packaging for NixOS</h4>
+					<p>I'm not gonna go too deep into packaging for Nix but I will show a working derivation below. I recommend reading <a href="https://nixos.org/nixos/nix-pills/why-you-should-give-it-a-try.html">Nix pills</a>
+						if you're interested in learning Nix.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #DDD">{</span> stdenv<span style="color: #DDD">,</span> fetchFromGitHub<span style="color: #DDD">,</span> kernel <span style="color: #DDD">}:</span>
+
+stdenv<span style="color: #DDD">.</span>mkDerivation <span style="color: #FB4934">rec</span> <span style="color: #DDD">{</span>
+  <span style="color: #B8BB26">name</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;hddled_tmj33-${</span>version<span style="color: #B8BB26">}-${</span>kernel<span style="color: #DDD">.</span>version<span style="color: #B8BB26">}&quot;</span><span style="color: #DDD">;</span>
+  <span style="color: #B8BB26">version</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;0.1&quot;</span><span style="color: #DDD">;</span>
+
+  <span style="color: #B8BB26">src</span> <span style="color: #DDD">=</span> fetchFromGitHub <span style="color: #DDD">{</span>
+    <span style="color: #B8BB26">owner</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;arnarg&quot;</span><span style="color: #DDD">;</span>
+    <span style="color: #B8BB26">repo</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;hddled_tmj33&quot;</span><span style="color: #DDD">;</span>
+    <span style="color: #B8BB26">rev</span> <span style="color: #DDD">=</span> version<span style="color: #DDD">;</span>
+    <span style="color: #B8BB26">sha256</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;0izz2xxg47rsj88pfqrx035n8hz78bqna41vljwc29r8aid9rnk9&quot;</span><span style="color: #DDD">;</span>
+  <span style="color: #DDD">};</span>
+
+  <span style="color: #B8BB26">nativeBuildInputs</span> <span style="color: #DDD">=</span> kernel<span style="color: #DDD">.</span>moduleBuildDependencies<span style="color: #DDD">;</span>
+
+  <span style="color: #928374; font-style: italic"># We don&#39;t want to depmod yet, just build and package the module</span>
+  <span style="color: #B8BB26">preConfigure</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&#39;&#39;</span>
+<span style="color: #B8BB26">    sed -i &#39;s|depmod|#depmod|&#39; Makefile</span>
+<span style="color: #B8BB26">  &#39;&#39;</span><span style="color: #DDD">;</span>
+
+  <span style="color: #B8BB26">makeFlags</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span>
+    <span style="color: #B8BB26">&quot;TARGET=${</span>kernel<span style="color: #DDD">.</span>modDirVersion<span style="color: #B8BB26">}&quot;</span>
+    <span style="color: #B8BB26">&quot;KERNEL_MODULES=${</span>kernel<span style="color: #DDD">.</span>dev<span style="color: #B8BB26">}/lib/modules/${</span>kernel<span style="color: #DDD">.</span>modDirVersion<span style="color: #B8BB26">}&quot;</span>
+    <span style="color: #B8BB26">&quot;MODDESTDIR=$(out)/lib/modules/${</span>kernel<span style="color: #DDD">.</span>modDirVersion<span style="color: #B8BB26">}/kernel/drivers/misc&quot;</span>
+  <span style="color: #DDD">];</span>
+
+  <span style="color: #B8BB26">meta</span> <span style="color: #DDD">=</span> <span style="color: #FB4934">with</span> stdenv<span style="color: #DDD">.</span>lib<span style="color: #DDD">;</span> <span style="color: #DDD">{</span>
+    <span style="color: #B8BB26">description</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;A linux module for controlling the HDD LEDs on Terramaster NAS devices with Intel J33xx CPU&quot;</span><span style="color: #DDD">;</span>
+    <span style="color: #B8BB26">homepage</span> <span style="color: #DDD">=</span> <span style="color: #DDD">https://github.com/arnarg/hddled_tmj33;</span>
+    <span style="color: #B8BB26">license</span> <span style="color: #DDD">=</span> licenses<span style="color: #DDD">.</span>gpl2<span style="color: #DDD">;</span>
+    <span style="color: #B8BB26">platforms</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span> <span style="color: #B8BB26">&quot;x86_64-linux&quot;</span> <span style="color: #DDD">];</span>
+  <span style="color: #DDD">};</span>
+<span style="color: #DDD">}</span>
+</code></pre></div>
+					<p>This derivation then needs to be appended to the list of extra module packages.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #DDD">{</span> pkgs<span style="color: #DDD">,</span> lib<span style="color: #DDD">,</span> <span style="color: #DDD">...</span> <span style="color: #DDD">}:</span>
+<span style="color: #FB4934">let</span>
+  <span style="color: #B8BB26">hddled_tmj33</span> <span style="color: #DDD">=</span> lib<span style="color: #DDD">.</span>callPackage <span style="color: #DDD">./hddled_tmj33.nix</span> <span style="color: #DDD">{</span> <span style="color: #B8BB26">kernel</span> <span style="color: #DDD">=</span> pkgs<span style="color: #DDD">.</span>linuxPackages<span style="color: #DDD">.</span>kernel<span style="color: #DDD">;</span> <span style="color: #DDD">};</span>
+<span style="color: #FB4934">in</span> <span style="color: #DDD">{</span>
+  <span style="color: #DDD">...</span>
+  boot<span style="color: #DDD">.</span><span style="color: #B8BB26">extraModulePackages</span> <span style="color: #DDD">=</span> <span style="color: #FB4934">with</span> pkgs<span style="color: #DDD">.</span>linuxPackages<span style="color: #DDD">;</span> <span style="color: #DDD">[</span> it87 hddled_tmj33 <span style="color: #DDD">];</span>
+  boot<span style="color: #DDD">.</span><span style="color: #B8BB26">kernelModules</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span><span style="color: #B8BB26">&quot;coretemp&quot;</span> <span style="color: #B8BB26">&quot;it87&quot;</span> <span style="color: #B8BB26">&quot;hddled_tmj33&quot;</span><span style="color: #DDD">];</span>
+  <span style="color: #DDD">...</span>
+<span style="color: #DDD">}</span>
+</code></pre></div>
+					<h3>Plex Media Server</h3>
+					<p>To install Plex Media Server you must include the following in your <code>/etc/nixos/configuration.nix</code>.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #928374; font-style: italic"># Plex has an unfree license</span>
+nixpkgs<span style="color: #DDD">.</span>config<span style="color: #DDD">.</span><span style="color: #B8BB26">allowUnfree</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+
+<span style="color: #928374; font-style: italic"># For hardware transcoding</span>
+environment<span style="color: #DDD">.</span><span style="color: #B8BB26">systemPackages</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span> pkgs<span style="color: #DDD">.</span>libva <span style="color: #DDD">];</span>
+
+services<span style="color: #DDD">.</span>plex<span style="color: #DDD">.</span><span style="color: #B8BB26">enable</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+<span style="color: #928374; font-style: italic"># If you have enabled the firewall</span>
+<span style="color: #928374; font-style: italic"># It will open necessary ports in your firewall</span>
+service<span style="color: #DDD">.</span>ples<span style="color: #DDD">.</span><span style="color: #B8BB26">openFirewall</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+</code></pre></div>
+					<p>After getting a Plex Pass subscription and turning on hardware transcoding for this server I can transcode videos with fairly low CPU utilization.</p>
+					<h2>Conclusion</h2>
+					<p>I've really enjoyed having this setup. After setting it up initially I've barely had to touch it and I can run automatic updates and trust that they won't mess up the system completely (I can always rollback the whole system). Since this experiment went so well I've also started using NixOS on my workstation and <a href="https://github.com/LnL7/nix-darwin">nix-darwin</a>
+						on my work macbook.</p>
+					<p>My only regret is not buying a bigger one, like the <a href="https://www.terra-master.com/global/products/homesoho-nas/f4-221.html">F4-221</a>. Looking at the thick border on the right side of the drive bays suggests to me that this unit might be identical to the 5-bay one except with one drive bay blocked off, which would be a perfect place for an SSD to boot from. Some pictures in a <a href="https://nascompares.com/terramaster-f4-220-nas-review/">review</a>
+						seem to back that up as there is a SATA connector behind there, it may be disabled though. But as I'm using both of my drive bays for HDDs I'm booting the OS off an external drive.</p>
+					<p>You can find my full NixOS configuration for my NAS <a href="https://github.com/arnarg/config/blob/master/machines/terramaster/configuration.nix">here</a>.</p>
+					<p>
+						<strong>
+							Discuss on
+							<a href="https://news.ycombinator.com/item?id=22222988">
+								Hacker News
+							</a>
+							or
+							<a href="https://www.reddit.com/r/linux/comments/ey5a5t/running_nixos_on_a_consumer_nas/">
+								Reddit
+							</a>
+						</strong>
+					</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="py-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			hardware | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="hardware | codedbearder">
+		<meta property="twitter:title" content="hardware | codedbearder">
+		<meta itemprop="name" content="hardware | codedbearder">
+		<meta name="application-name" content="hardware | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<section>
+					<h1 class="font-light text-3xl">
+						#hardware
+					</h1>
+					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
+						<header>
+							<h2 class="my-6">
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/f3-backplane">
+									I made a new backplane for my Terramaster F2-221 NAS
+								</a>
+							</h2>
+							<p class="mb-2 text-stone-900 dark:text-stone-200">
+								Posted on Apr 26, 2024
+							</p>
+						</header>
+						<div>
+							In a <a href="https://codedbearder.com/posts/nixos-terramaster-f2-221">previous post</a>
+							I wrote about how I setup NixOS on my Terramaster F2-221 instead of using the included TOS provided by Terramaster. This in itself was quite simple as the NAS contains Intel J3355, a standard X86_64 CPU. However the NAS only has 2 SATA connectors, both of which were being used for the 4TB hard drives, so I had to resort to plugging in an external USB SSD for storing the operating system. This quickly became a little annoying to make room for this external SSD behind the NAS and make sure it's always plugged in when something is moved around in the shelf where I keep it, so I wanted to see if I could come up with a better solution.
+						</div>
+						<div class="my-4">
+							<a href="/posts/f3-backplane">
+								Read more &gt;
+							</a>
+						</div>
+					</article>
+					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
+						<header>
+							<h2 class="my-6">
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nanopi-r4s-spi-flash">
+									Making NanoPI R4S booting sane with SPI Flash
+								</a>
+							</h2>
+							<p class="mb-2 text-stone-900 dark:text-stone-200">
+								Posted on Apr 4, 2024
+							</p>
+						</header>
+						<div>
+							There's one thing I really don't like about many popular ARM SBCs (Single Board Computers) that for some reason has been deemed acceptable and that is the lack of on-board flash for storing the bootloader. This means that the bootloader (most often u-boot) needs to be written to a specific location on the SD card or eMMC (if available). Generally distributions for such boards offer an image for download that can be written as is to the boot medium, including the bootloader, requiring such images to be created for <em>each supported SBC</em>. Wouldn't it be nice if we could just pop in a generic installer USB stick where we can partition the drive as needed before installing, like is done with generic x86 computers?
+						</div>
+						<div class="my-4">
+							<a href="/posts/nanopi-r4s-spi-flash">
+								Read more &gt;
+							</a>
+						</div>
+					</article>
+					<div class="grid grid-cols-3">
+
+						<div class="col-start-2 text-center">
+							Page 1 of 1
+						</div>
+					</div>
+				</section>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="py-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

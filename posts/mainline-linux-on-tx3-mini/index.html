@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			TX3 Mini: Mainline Linux on an Android TV Box | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="TX3 Mini: Mainline Linux on an Android TV Box | codedbearder">
+		<meta property="twitter:title" content="TX3 Mini: Mainline Linux on an Android TV Box | codedbearder">
+		<meta itemprop="name" content="TX3 Mini: Mainline Linux on an Android TV Box | codedbearder">
+		<meta name="application-name" content="TX3 Mini: Mainline Linux on an Android TV Box | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						TX3 Mini: Mainline Linux on an Android TV Box
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Mar 26, 2019
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/arm">
+							#arm
+						</a>
+						<a class="no-underline" href="/tags/u-boot">
+							#u-boot
+						</a>
+						<a class="no-underline" href="/tags/linux">
+							#linux
+						</a>
+					</div>
+					<img class="rounded" src="/images/posts/mainline-linux-on-tx3-mini/tx3-mini-hero.jpg" alt="thumbnail">
+					<p>I've always found Raspberry Pi cases and the Pi's connector locations to be rather aesthetically unpleasing, with the power connector coming out from the side and the ethernet from the back (or vice versa). Imagine my excitement when I was browsing the <a href="https://github.com/torvalds/linux">github mirror of Linux</a>
+						(as you do) and I ran into a dts for an Android TV box called Tanix TX3 Mini.</p>
+					<!--more-->
+
+					<div class="admonition note">
+						<p class="admonition-title">Update 2019/10/13</p>
+						<p>After writing this post I bought some more of these boards and it seems there has been a new hardware revision. The bad news is that they changed the eMMC module for a NAND chip that they interface directly with. This is not supported without a custom kernel most of the time. The good news is that they seem to have changed the SSV6051 WIFI chip for a better known RTL8723BS which is in staging in Linux. This board no longer looks as attractive.</p>
+					</div>
+					<p>It has the following specs:</p>
+					<ul>
+						<li>Amlogic S905W chipset</li>
+						<li>Quad Core 1.2GHz 64bit Cortex-A53</li>
+						<li>Mali-450</li>
+						<li>1 or 2 GiB of DDR3 memory</li>
+						<li>8 or 16 GiB of eMMC flash</li>
+						<li>10/100Mbit Ethernet</li>
+						<li>HDMI output up to 4K30P</li>
+					</ul>
+					<p>It's also cheap enough so that I wouldn't feel bad about bricking it in my attempt to get Mainline Linux running on it. I got the 2 GiB RAM and 16 GiB eMMC model. They usually go for about $30 on AliExpress or Ebay and that's including a case (duh!), power brick, HDMI cable and an IR remote (I'm using mine to control my TV soundbar, neat!).</p>
+					<p>There are images with LibreELEC and armbian out there on forums, but they require you to hold down a small button on the board to boot from the sd card and also runs the same kernel as the original Android OS, I believe. That simply won't do!</p>
+					<blockquote>
+						<p>Warning! This post is a brain dump of rather technical information, if you just want some step by step skip to <a href="#recap">recap</a></p>
+					</blockquote>
+					<h2>U-Boot</h2>
+					<p>This TV box ships with Android installed and has a rather old version of Linux and U-boot. Most TV boxes that share the same chipset are based on the same reference design and include an unsoldered serial header on the board, how handy!</p>
+					<p><img alt="board" src="/images/posts/mainline-linux-on-tx3-mini/tx3-mini-board.jpg"></p>
+					<p>After you've soldered a pin header to the serial port and connected to it you'll see that it's running U-Boot v2015.01, yikes! This version can't boot a modern Linux image, we're gonna have to compile our own!</p>
+					<p>This proved to be more complicated than I imagined...</p>
+					<h3>Bootloader stages what!?</h3>
+					<p>Ok look, I'm no expert but apparently aarch64 has secure boot and it doesn't just boot U-Boot directly but in stages... 4 stages! That's 4 bootloader stages that run before U-Boot runs and in turn boots Linux. Although, one of those stages (stage 3-2) is optional and not used on our board, but 4 sounded better for dramatic effect, give me a break Karen!</p>
+					<p>The stages are as follows:</p>
+					<ul>
+						<li>Bootloader stage 1 (BL1) AP Trusted ROM (loaded from flash in the SoC)</li>
+						<li>Bootloader stage 2 (BL2) Trusted Boot Firmware</li>
+						<li>Bootloader stage 3-1 (BL31) EL3 Runtime Software</li>
+						<li>Bootloader stage 3-2 (BL32) Secure-EL1 Payload (optional)</li>
+						<li>Bootloader stage 3-3 (BL33) Non-trusted Firmware (this is U-Boot)</li>
+					</ul>
+					<p>If you're interested you can read more about it <a href="https://github.com/ARM-software/arm-trusted-firmware/blob/master/docs/design/firmware-design.rst">here</a>, in a lot of detail!</p>
+					<h3>Missing defconfig</h3>
+					<p>So, the U-Boot source code was missing any defconfig resembling tx3-mini, f%#@! But after navigating the source for a while I found a board that sounded a lot like mine!</p>
+					<p><img alt="The P212" src="/images/posts/mainline-linux-on-tx3-mini/p212.gif#img-center"></p>
+					<p>The P212 has Amlogic S905X chipset which is a little different from the TX3 Mini's S905W. Now, it's been a few months on and off (mostly off) that I've worked on this so I don't remember exactly what steps I took to figure out that TX3 Mini is referenced from P281, but I did!</p>
+					<p>I simply made a copy of all the files for P212 and renamed them to P281, most importantly to make <code>CONFIG_DEFAULT_DEVICE_TREE</code>
+						equal <code>meson-gxl-s905w-p281</code>
+						as its <a href="https://github.com/torvalds/linux/blob/master/arch/arm64/boot/dts/amlogic/meson-gxl-s905w-p281.dts">dtb</a>
+						is upstream and will therefor ship with distros. No need to compile a dtb manually! I have a <a href="https://github.com/arnarg/u-boot/tree/v2019.01-tx3-mini">fork of U-Boot</a>
+						that includes this on a branch called <code>v2019.01-tx3-mini</code>.</p>
+					<p>With that done we can simply run:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>make<span style="color: #DDD"> </span><span style="color: #83A598">ARCH</span><span style="color: #DDD">=</span>arm<span style="color: #DDD"> </span><span style="color: #83A598">CROSS_COMPILE</span><span style="color: #DDD">=</span>aarch64-linux-gnu-<span style="color: #DDD"> </span>p281_defconfig
+make<span style="color: #DDD"> </span><span style="color: #83A598">ARCH</span><span style="color: #DDD">=</span>arm<span style="color: #DDD"> </span><span style="color: #83A598">CROSS_COMPILE</span><span style="color: #DDD">=</span>aarch64-linux-gnu-
+</code></pre></div>
+					<blockquote>
+						<p>aarch64-linux-gnu is the name of the aarch64 toolchain in Arch Linux' repos, your distro might call it something else.</p>
+					</blockquote>
+					<h3>Let's get back to that secure boot thing</h3>
+					<p>Remember when I talked about those bootloader stages? Well those are not bundled with U-Boot. <a href="https://github.com/ARM-software/arm-trusted-firmware">ARM Trusted Firmware</a>
+						has reference implementations for some platforms, but not our board.</p>
+					<p>Looking at the <a href="https://github.com/u-boot/u-boot/blob/master/board/amlogic/p212/README.p212">README</a>
+						for P212 you can see it has a step by step guide for creating a complete bootloader image including all the stages, great! The repo linked to in that guide doesn't include any P281 config though, again! I did however find <a href="https://github.com/Stane1983/uboot-amlogic">this</a>
+						one that did!</p>
+					<p>The toolchain suggested is from 2013 and I couldn't get it to work on Arch Linux and the one I used to build U-Boot earlier is too recent for this code. I ended up building it in a CentOS 7 VM as that has an ancient kernel.</p>
+					<h3>Wiping the eMMC</h3>
+					<p>To wipe the eMMC we're gonna need the <a href="https://github.com/Stane1983/aml-linux-usb-burn">aml-flash</a>
+						tool! This tool is meant for burning the Android image to it but it does have a handy <code>--destroy</code>
+						flag that wipes the bootloader from eMMC. The reason we want this is that the SoC looks for the bootloader on eMMC before it looks at the sd card, so we need it gone! You will be able to go back to Android if you obtain an image from <a href="http://www.tanix-box.com/download-view/tanix-tx3-mini-firmware-full-image-20170829/">here</a>
+						and use this tool to flash it.</p>
+					<p>All you have to do to wipe the eMMC is to go through the install instructions in the repo, find a USB Type-A to Type-A cable (stop looking, you don't have it, why would you?), plug it into the USB slot closer to the sd card on the board, the other into your computer and run:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #FE8019">cd</span><span style="color: #DDD"> </span>/path/to/aml-flash-repository
+<span style="color: #FE8019">export</span><span style="color: #DDD"> </span><span style="color: #83A598">PATH</span><span style="color: #DDD">=</span><span style="color: #83A598">$PWD</span>/tools:<span style="color: #83A598">$PATH</span>
+./aml-flash<span style="color: #DDD"> </span>--destroy
+</code></pre></div>
+					<p>I made my cable by soldering a USB Type-B PCB socket I had laying around to a cut USB cable. Then I could simply use a USB Type-A to USB Type-B cable to connect to it.</p>
+					<p>You could also just solder two of them together or order one online, turns out they do exist!</p>
+					<h3>That's not the memory I was promised!</h3>
+					<p>Here we are, we have compiled U-Boot and created a bootloader image. Only thing left is to burn it to an sd card. You'll find the following in the README for P212 to do so:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #83A598">DEV</span><span style="color: #DDD">=</span>/dev/your_sd_device
+dd<span style="color: #DDD"> </span><span style="color: #FB4934">if</span><span style="color: #DDD">=</span>fip/u-boot.bin.sd.bin<span style="color: #DDD"> </span><span style="color: #83A598">of</span><span style="color: #DDD">=</span><span style="color: #83A598">$DEV</span><span style="color: #DDD"> </span><span style="color: #83A598">conv</span><span style="color: #DDD">=</span>fsync,notrunc<span style="color: #DDD"> </span><span style="color: #83A598">bs</span><span style="color: #DDD">=</span><span style="color: #D3869B">512</span><span style="color: #DDD"> </span><span style="color: #83A598">skip</span><span style="color: #DDD">=</span><span style="color: #D3869B">1</span><span style="color: #DDD"> </span><span style="color: #83A598">seek</span><span style="color: #DDD">=</span><span style="color: #D3869B">1</span>
+dd<span style="color: #DDD"> </span><span style="color: #FB4934">if</span><span style="color: #DDD">=</span>fip/u-boot.bin.sd.bin<span style="color: #DDD"> </span><span style="color: #83A598">of</span><span style="color: #DDD">=</span><span style="color: #83A598">$DEV</span><span style="color: #DDD"> </span><span style="color: #83A598">conv</span><span style="color: #DDD">=</span>fsync,notrunc<span style="color: #DDD"> </span><span style="color: #83A598">bs</span><span style="color: #DDD">=</span><span style="color: #D3869B">1</span><span style="color: #DDD"> </span><span style="color: #83A598">count</span><span style="color: #DDD">=</span><span style="color: #D3869B">444</span>
+</code></pre></div>
+					<p>Now pop that sd card into your board, plug in the serial port (baud rate 115200) and look at that thing boot U-Boot! Wait, we're only seeing 1 GiB of RAM!?</p>
+					<p>After looking through the <a href="https://github.com/Stane1983/uboot-amlogic">uboot-amlogic</a>
+						repo for a while I found a handy variable called <a href="https://github.com/Stane1983/uboot-amlogic/blob/master/board/amlogic/configs/gxl_p281_v1.h#L259">CONFIG_DDR_SIZE</a>. Its value is in MiB and is currently set to <code>1024</code>, now this is promising! After changing it to <code>2048</code>
+						and re-compiling, it boots and detects 2 GiB!</p>
+					<p>Now we have a functioning U-Boot image and can move on to the next step, Linux!</p>
+					<p>You can get the pre-compiled bootloader stages in <a href="https://github.com/arnarg/tx3-mini-uboot-build/raw/master/files/gxl-p281-fip-1g.tar.gz">1 GiB</a>
+						or <a href="https://github.com/arnarg/tx3-mini-uboot-build/raw/master/files/gxl-p281-fip-2g.tar.gz">2 GiB</a>
+						format. But better yet, I also made a Makefile that builds a complete bootloader image with a simple <code>make</code>
+						command <a href="https://github.com/arnarg/tx3-mini-uboot-build">here</a>.</p>
+					<h2>Linux</h2>
+					<p>Now I have some good news! Amlogic S905W has a pretty good mainline Linux support. We don't need to compile our own kernel or any of that nonsense.</p>
+					<p>We do have to take one thing into consideration though when picking a distro, the kernel version has to be fairly recent. I've had good results with 4.19+ although I could not write onto the eMMC flash until Linux 5.0. For that reason I'm picking Arch Linux ARM in this post.</p>
+					<h3>Arch Linux ARM</h3>
+					<p>As a user of Arch Linux this was a really natural fit for me. Arch Linux is a rolling release distro and has very up to date packages (like Linux 5.0!). Arch Linux ARM is an ARM version of it but it is not maintained by the same people as the original Arch Linux.</p>
+					<p>Preparing an sd card is fairly straight forward:</p>
+					<ol>
+						<li>Download <a href="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz">ArchLinuxARM-aarch64-latest.tar.gz</a></li>
+						<li>Partition sd card (this can be a single root partition)</li>
+						<li>Format that root partition as ext4 (make sure it has label <code>linux-root</code>)</li>
+						<li>Mount that root partition</li>
+						<li>Extract the Arch Linux ARM rootfs onto the partition</li>
+						<li>Burn the bootloader to the sd card (like talked about in previous section)</li>
+						<li>Finally write the following in <code>/boot/extlinux/extlinux.conf</code></li>
+					</ol>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>menu title ArchLinuxARM Boot Options.
+timeout 20
+
+label ArchLinuxARM
+        kernel /boot/Image
+        initrd /boot/initramfs-linux.img
+        append rw root=LABEL=linux-root rootwait rootfstype=ext4 coherent_pool=1M ethaddr=${ethaddr}
+        fdtdir /boot/dtbs/
+</code></pre></div>
+					<blockquote>
+						<p>The paths are relative to the first partition. So if you have a separate boot partition that is then mounted under <code>/boot</code>
+							in the root, make sure it's the first partition and drop the <code>/boot</code>
+							prefix from all the paths in <code>extlinux.conf</code>. This boot partition will also need to be added manually to fstab inside the rootfs, if you like kernel updates.</p>
+					</blockquote>
+					<p>After that fiasco is done you can pop that sd card into your board and watch as that glorious Arch Linux ARM boots. You can find more information such as default passwords and services in the Arch Linux ARM <a href="https://archlinuxarm.org/platforms/armv8/generic">docs</a>.</p>
+					<p>Now you can enjoy the world of tomorrow with Arch Linux ARM! Except, there is a problem.</p>
+					<h3>More U-Boot stuff!?</h3>
+					<p>So, on properly supported hardware U-Boot can load the MAC address from NAND flash or something fancy like that. But that's not how we roll around here!</p>
+					<p>The reason this is a problem is that if U-Boot can't load the MAC address from hardware it will just say "fine!" and make up its own, on every single boot. If you don't reboot it very often or use a static IP address this might not be a problem but on every boot it will get a new DHCP lease. U-Boot no longer supports hardcoding it in the config, as MAC addresses are suppose to be globally unique, so lets work around that.</p>
+					<p>Ok so, here's how the the process works after you've booted into U-Boot.</p>
+					<ol>
+						<li>It looks for <code>extlinux.conf</code>
+							in <code>/extlinux</code>
+							and <code>/boot/extlinux</code></li>
+						<li>It looks for a <code>boot.scr</code>
+							script in <code>/</code>
+							and <code>/boot</code></li>
+						<li>It looks for <code>/efi/boot/bootaa64.efi</code>
+							binary</li>
+						<li>It tries to DHCP/PXE boot</li>
+					</ol>
+					<p>Each step is run on every bootable medium (sd card, eMMC and then USB). If it finds one it tries to boot it and if it fails it moves to the next one.</p>
+					<p>U-Boot has an environment of variables that are generated on compile time or populated on boot time, like <code>ethaddr</code>
+						when possible. <code>ethaddr</code>
+						is the MAC address of the first ethernet interface (followed by <code>eth1addr</code>, <code>eth2addr</code>
+						and so on) but in our case this variable doesn't exist. The <code>boot.scr</code>
+						script can manipulate the environment but as we can see the <code>extlinux.conf</code>
+						step runs first, gosh darnit!.</p>
+					<p>This is not a new idea but wasn't implemented in the P212 config. I added a preboot step that tries to load additional environment variables from a file named <code>uEnv.txt</code>
+						in either <code>/</code>
+						or <code>/boot</code>
+						in the first partition of the sd card and eMMC.</p>
+					<p>So <code>echo "ethaddr=12:34:56:78:9a:bc" &gt; uEnv.txt</code>
+						should do the trick, but you know, with an actual MAC address (mine is printed on the bottom of the case).</p>
+					<h3>Flashing it to the eMMC</h3>
+					<p>So running from the sd card is cute and everything, but we have a 16 GiB eMMC flash that we can use instead! And besides, sd cards are horrible for writing to a lot and will fail soon anyway unless you run your system from ram, but that's not the subject of this post!</p>
+					<p>To get it running off the eMMC flash you could simply repeat the steps above, but that takes time and who wants that? Instead I ~~wasted~~ spent time on creating a script that does all the steps for me and outputs an image that we can simply burn to the sd card and then the eMMC flash.</p>
+					<p>That script can be found <a href="https://github.com/arnarg/tx3-mini-arch-linux-build">here</a>. The final image also includes the bootloader.</p>
+					<h3>Recap</h3>
+					<p>If you don't care about the process it took me to get here and want step by step instructions:</p>
+					<ol>
+						<li>Clone <a href="https://github.com/arnarg/tx3-mini-arch-linux-build">tx3-mini-arch-linux-build</a></li>
+						<li>Run <code>./genimage.sh</code></li>
+						<li><a href="#wiping-the-emmc">Wipe the eMMC</a></li>
+						<li>Burn the image onto the sd card (<code>dd if=ArchLinuxARM-tx3-mini.img of=/dev/your_sd_card bs=1M</code>)</li>
+						<li>Get ArchLinuxARM-tx3-mini.img onto your sd card or scp it to your running TX3 Mini</li>
+						<li>Burn the image onto the eMMC from the running sd card setup (<code>dd if=ArchLinuxARM-tx3-mini.img of=/dev/mmcblkX bs=1M</code>)</li>
+					</ol>
+					<blockquote>
+						<p>The generated image is 2GiB. After flashing it to the eMMC the partition needs to be enlarged manually. You can google that, I'm not your mom.</p>
+					</blockquote>
+					<h2>Final words</h2>
+					<p>That concludes our journey through thick and thin of getting mainline Linux running on the TX3 Mini. I haven't played at all with getting WIFI working, it has an <code>SSV6051</code>
+						chip which does not have a driver in mainline Linux and a quick google search doesn't give me much.</p>
+					<p>Another thing is that the board has a 7-segment display where it can show the time or whatever you want (as long as it's not more than 4 numbers) and some icons, image search "TX3 Mini" and you'll see what I mean. This is controlled by an FD628 controller which does give me some results when googling for a driver (<a href="https://github.com/arthur-liberman/linux_openvfd">linux_openvfd</a>) but I have not tried that one either.</p>
+					<p>Finally, the HDMI does work, though I haven't tried it for anything more than displaying a console. There is a <a href="https://archlinuxarm.org/packages/aarch64/mali-utgard-meson-libgl-x11">driver for the GPU</a>
+						in Arch Linux ARM's repo.</p>
+					<p>Now I can proudly plug my new ARM SBC into my network and use it as a server (or something). Lets throw it in the closet where no one can see it, making my point about aesthetics moot. But hey! It was fun figuring this out.</p>
+					<p>
+						<strong>
+							Discuss on
+							<a href="https://news.ycombinator.com/item?id=19493697">
+								Hacker News
+							</a>
+							or
+							<a href="https://www.reddit.com/r/linux/comments/b5phw3/tx3_mini_mainline_linux_on_an_android_tv_box/">
+								Reddit
+							</a>
+						</strong>
+					</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="py-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

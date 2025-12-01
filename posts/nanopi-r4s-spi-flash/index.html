@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			Making NanoPI R4S booting sane with SPI Flash | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="Making NanoPI R4S booting sane with SPI Flash | codedbearder">
+		<meta property="twitter:title" content="Making NanoPI R4S booting sane with SPI Flash | codedbearder">
+		<meta itemprop="name" content="Making NanoPI R4S booting sane with SPI Flash | codedbearder">
+		<meta name="application-name" content="Making NanoPI R4S booting sane with SPI Flash | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						Making NanoPI R4S booting sane with SPI Flash
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Apr 4, 2024
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/arm">
+							#arm
+						</a>
+						<a class="no-underline" href="/tags/u-boot">
+							#u-boot
+						</a>
+						<a class="no-underline" href="/tags/linux">
+							#linux
+						</a>
+						<a class="no-underline" href="/tags/hardware">
+							#hardware
+						</a>
+						<a class="no-underline" href="/tags/pcb">
+							#pcb
+						</a>
+					</div>
+					<img class="rounded" src="/images/posts/nanopi-r4s-spi-flash/nanopi-r4s-hero.jpg" alt="thumbnail">
+					<p>There's one thing I really don't like about many popular ARM SBCs (Single Board Computers) that for some reason has been deemed acceptable and that is the lack of on-board flash for storing the bootloader. This means that the bootloader (most often u-boot) needs to be written to a specific location on the SD card or eMMC (if available). Generally distributions for such boards offer an image for download that can be written as is to the boot medium, including the bootloader, requiring such images to be created for <em>each supported SBC</em>. Wouldn't it be nice if we could just pop in a generic installer USB stick where we can partition the drive as needed before installing, like is done with generic x86 computers?</p>
+					<!--more-->
+
+					<h2>Tow-Boot</h2>
+					<p><a href="https://tow-boot.org/">Tow-Boot</a>
+					describes itself as...</p>
+					<blockquote>
+						<p>... a user-friendly, opinionated distribution of U-Boot, where there is as few differences in features possible between boards, and a "familiar" user interface for an early boot process tool.</p>
+					</blockquote>
+					<p>And this is really nice as it decouples installation of firmware from the operating system, at least when the 2 can be written to a different medium. Some SBCs do come with SPI flash onboard such as many pine64 and radxa devices, as well as my Odroid N2s. What this means is that Tow-Boot (or regular U-Boot) can be written to this SPI flash where it will be read from during boot and then the operating system (or USB installer image) can be then read and booted.</p>
+					<p>That brings me to...</p>
+					<h2>NanoPI R4S</h2>
+					<p>My <a href="https://www.friendlyelec.com/index.php?route=product/product&amp;product_id=284">NanoPI R4S</a>
+						has been a bit of a black sheep in my small fleet of SBCs, where for a long time it was only kept in my drawer due to the pain of managing the bootloader on an SD card. Now I've got to clarify that I'm fully capable of building the bootloader and write to the correct location on the SD card, it's just that I don't particularly want to rely on that as it can be accidentally overwritten when formatting the drive for example.</p>
+					<p>So when I was researching my options I noticed that the GPIO header on the board exposes SPI1 which just so happens to be the first location the RK3399 tries to load the bootloader from. If only I can get a NOR flash chip attached to this header, I might just be a little bit happier when using this SBC.</p>
+					<h2>PCB Design</h2>
+					<p>I'm no electrical engineer but I have dabbled with microcontrollers in the past and I have played with designing a PCB exactly once before many years ago so I was pretty clueless going into this. As an extra challenge it had to be quite compact as I have the aluminum case that everything needs to fit into, which doesn't allow for much room.</p>
+					<p><img alt="NanoPI R4S metal case" src="/images/posts/nanopi-r4s-spi-flash/nanopi-r4s-case.jpg">
+					<a href="https://www.friendlyelec.com/index.php?route=product/product&amp;product_id=284">Image source</a></p>
+					<p>The PCB is 66x66mm (66mm == 2.598425 inches) for reference.</p>
+					<p>Thankfully, there is a bit of a raised section in the big heatsink chunk of the case that touches the CPU (through a thermal pad). This section is on the left side of the pictures (above the light tubes) and it <em>just</em>
+						tall enough to get a PCB (with relatively thin components on it) in there. The issue would be to mount the PCB low enough without having to solder it to the headers on the SBC.</p>
+					<p>Normal female pin headers mount on top of the pin headers of the SBC (think of a Raspberry PI hat) which would be <em>way too tall</em>
+						to be able to then close the case again but then I discovered these cool bottom mountable pin headers from Harwin called <a href="https://www.harwin.com/products/M20-7810545/">M20-7810545</a>.</p>
+					<p><img alt="NanoPI R4S flash PCB side profile" src="/images/posts/nanopi-r4s-spi-flash/nanopi-r4s-flash-board-profile.jpg"></p>
+					<p>Look how low profile that is!</p>
+					<p>When it comes to the actual schematic and PCB design, there's not much to it. Just the NOR flash chip itself, a decoupling capacitor and a dip switch for enabling write protection and hold functionality, along with some pull-up resistors. I have released the kicad project files and gerbers on <a href="https://github.com/arnarg/nanopi-r4s-spi-flash-board/">GitHub</a>.</p>
+					<blockquote>
+						<p>Note that a previous revision included an i2c EEPROM for storing mac addresses for the different ethernet interfaces, but ended up just storing this in the U-Boot environment instead.</p>
+					</blockquote>
+					<h2>Back to Tow-Boot</h2>
+					<p>Now we have added a NOR flash chip to SPI1 but the config for this board in U-Boot doesn't include any support for a NOR flash and even worse, there isn't even any support for this board in Tow-Boot!</p>
+					<p>The latter is very easily added as all board definitions in Tow-Boot are defined in nix and there were previous boards supported with RK3399 that I could look at for reference. I have opened a <a href="https://github.com/Tow-Boot/Tow-Boot/pull/296">pull request</a>
+						in order to get this added upstream which has been merged and will most likely be available in the next release after <code>2023.07-007</code>. This does not include support for my SPI flash module. This I have in a <a href="https://github.com/arnarg/tow-boot-custom">custom Tow-Boot build repository</a>
+						as I think this can't be easily upstreamed.</p>
+					<p>So the installation to the SPI flash involves:</p>
+					<ol>
+						<li>Checkout my <a href="https://github.com/arnarg/tow-boot-custom">custom Tow-Boot build</a>.</li>
+						<li>Run <code>nix-build -A friendlyElec-nanoPiR4S-SPI</code>
+							(nix install instructions not included).</li>
+						<li>Burn the resulting <code>./result/spi.installer.img</code>
+							to an SD card (<code>dd if=./result/spi.installer.img of=/dev/sdX bs=1M oflag=direct,sync status=progress</code>).</li>
+						<li>Boot from the SD card while attached to the serial port header on the NanoPI R4S and there should be presented to you the option to erase and flash the SPI NOR flash.</li>
+					</ol>
+					<blockquote>
+						<p>Alternatively you can download the pre-built <code>spi.installer.img</code>
+							from the <a href="https://github.com/arnarg/tow-boot-custom/releases/tag/2023.07-007">GitHub release</a>
+							in my repository.</p>
+					</blockquote>
+					<h3>Persistent MAC addresses</h3>
+					<p>U-Boot has its own device tree for the device compiled and included with the bootloader. It will load this device tree during startup and patch it with values from env variables <code>ethaddr</code>
+						and <code>eth1addr</code>
+						into the MAC addresses for the different ethernet interfaces. With the NOR flash the environment can be changed and saved between reboots.</p>
+					<p>Use the following commands in the U-Boot console to set yours:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>env<span style="color: #DDD"> </span><span style="color: #FE8019">set</span><span style="color: #DDD"> </span>-f<span style="color: #DDD"> </span>ethaddr<span style="color: #DDD"> </span>aa:bb:cc:dd:ee:ff
+env<span style="color: #DDD"> </span><span style="color: #FE8019">set</span><span style="color: #DDD"> </span>-f<span style="color: #DDD"> </span>eth1addr<span style="color: #DDD"> </span>aa:bb:cc:dd:ee:fe
+env<span style="color: #DDD"> </span>save
+</code></pre></div>
+					<h2>Bonus sanity: RTC</h2>
+					<p>Another annoyance of many SBCs is the lack of an RTC (Real Time Clock) which means that until an internet connection is established and the NTP client has fetched the correct time from a NTP server the system time is <em>very wrong</em>. This can happen rather late in the boot process.</p>
+					<p>The NanoPI R4S does include an RTC and a small header to include a battery for keeping time when powered off but, again, due to space constraints not even a CR2016 coin cell battery fits inside the case. I did however manage to fit a CR1216 by soldering wires directly to the battery (generally not recommended, the correct approach is to spot weld to them) and put heatshrink around it. It can then rest on top of the SD card slot and the case be closed. Enjoy your real time during bootup!</p>
+					<p>
+						<strong>
+							Discuss on
+							<a href="https://news.ycombinator.com/item?id=39931047">
+								Hacker News
+							</a>
+							or
+							<a href="https://www.reddit.com/r/SBCs/comments/1c4mva5/making_nanopi_r4s_booting_sane_with_spi_flash/">
+								Reddit
+							</a>
+						</strong>
+					</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="py-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

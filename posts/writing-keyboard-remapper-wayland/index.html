@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			I wrote a keyboard remapper for wayland | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="I wrote a keyboard remapper for wayland | codedbearder">
+		<meta property="twitter:title" content="I wrote a keyboard remapper for wayland | codedbearder">
+		<meta itemprop="name" content="I wrote a keyboard remapper for wayland | codedbearder">
+		<meta name="application-name" content="I wrote a keyboard remapper for wayland | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						I wrote a keyboard remapper for wayland
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Apr 11, 2020
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/linux">
+							#linux
+						</a>
+						<a class="no-underline" href="/tags/wayland">
+							#wayland
+						</a>
+					</div>
+					<img class="rounded" src="/images/posts/writing-keyboard-remapper-wayland/hero.jpg" alt="thumbnail">
+					<p>Recently I bought a new laptop with the intention of running Linux with Sway as my WM. This is the setup I run on my workstation where I have a 60% keyboard on which I use caps lock as a function key for a second layer.</p>
+					<p>Because muscle memory is a thing I have been using Karabiner Elements to remap the keyboard on my work macbook pro but I could not find a suitable alternative for Linux when using a Wayland compositor.</p>
+					<!--more-->
+
+					<h3>Why this is difficult on Wayland</h3>
+					<p>In the old X11 system any application could read the keyboard input from the X server (I do not have enough knowledge about X11 to claim this fact but that's how I understand it). This makes it easier to write keyboard remappers for it, as well as more neferious things like key loggers.</p>
+					<p>However, with the design on Wayland it was decided that for security's sake only the active window should be able to read the incoming keyboard events. This is to protect against key loggers but makes it difficult to write a keyboard remapper at the compositor level until some protocol has been developed for it.</p>
+					<h3>Let's move up the chain</h3>
+					<p>It is however possible to take the Display server/Compositor out of the equation entirely. If you inspect the directory <code>/dev/input</code>
+						you will find a bunch of files called <code>eventX</code>
+						(X being some number). These are your input devices and they can be read to get all events from them. Traditionally, distros make these files owned by the input group, so if your user is a part of that group you can read and write to those devices. You can even claim a device so that you get exclusive access to it, that is to say only you will get the events and unless you do something with those events the keyboard will appear to not work until it is released again.</p>
+					<p>So that's reading from the keyboard taken care of, what about sending those events back into the system? That's where uinput comes in.</p>
+					<p>The kernel documentation writes:</p>
+					<blockquote>
+						<p>uinput is a kernel module that makes it possible to emulate input devices from userspace. By writing to /dev/uinput (or /dev/input/uinput) device, a process can create a virtual input device with specific capabilities. Once this virtual device is created, the process can send events through it, that will be delivered to userspace and in-kernel consumers.</p>
+					</blockquote>
+					<p>To simplify, it is used to create virtual input devices that you can programmatically send events to so that it seems to the system that a real input device is being used. The module <code>uinput</code>
+						has to be loaded and a udev rule can be written so that it can be used by a user (by default the file is owned by root with permissions <code>600</code>).</p>
+					<p>What all this means is that a software can be written that claims an input device, reads the events, manipulates them in some way (remap) and writes them to a virtual keyboard. This is the approach used by the keyboard rebinding daemon <a href="https://github.com/snyball/Hawck">Hawck</a>
+						which I did consider using but due to its complexity and bigger scope than I needed (it supports writing macros in lua) I decided against it. The complexity of the software especially makes it difficult to audit the software which in this case I think is very important as this is a prime location to write in a key logger, remember this software by design has to be able to read every single event your keyboard emits.</p>
+					<p>So naturally I wrote my own.</p>
+					<h2>Waybind</h2>
+					<p>With the help of a couple of libraries (they had to be audited as well) it was really not a difficult task to support a two key combination remapping. It ended up being less than 500 lines of go code, not including the go modules I used to read the keyboard events and write to uinput, so it should be trivial to audit. It does not and will not support more complicated macros like Hawck.</p>
+					<p>All it needs is a YAML config file similar to the following:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C">device</span><span style="color: #DDD">: /dev/input/event0 </span><span style="color: #928374; font-style: italic"># Path to the input device to be read</span>
+<span style="color: #8EC07C">rebinds</span><span style="color: #DDD">:</span>
+<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># Binds KEY_GRAVE to KEY_ESC</span>
+<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># If modifier KEY_CAPSLOCK is also pressed then it&#39;s still KEY_GRAVE but KEY_CAPSLOCK is removed</span>
+<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># If modifier is KEY_LEFTSHIFT then it&#39;s KEY_LEFTSHIFT + KEY_GRAVE</span>
+<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_GRAVE</span>
+<span style="color: #DDD">    </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: KEY_ESC</span>
+<span style="color: #DDD">    </span><span style="color: #8EC07C">with_modifiers</span><span style="color: #DDD">:</span>
+<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
+<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: KEY_GRAVE</span>
+<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_LEFTSHIFT</span>
+<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: SKIP</span>
+
+<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># Binds KEY_CAPSLOCK + KEY_BACKSPACE to KEY_DELETE</span>
+<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_BACKSPACE</span>
+<span style="color: #DDD">    </span><span style="color: #8EC07C">with_modifiers</span><span style="color: #DDD">:</span>
+<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
+<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: KEY_DELETE</span>
+
+<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># KEY_CAPSLOCK + KEY_F12 will make waybind exit</span>
+<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_F12</span>
+<span style="color: #DDD">    </span><span style="color: #8EC07C">with_modifiers</span><span style="color: #DDD">:</span>
+<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
+<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: EXIT</span>
+
+<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># Completely unbind KEY_CAPSLOCK</span>
+<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
+<span style="color: #DDD">    </span><span style="color: #8EC07C">unbind</span><span style="color: #DDD">: true</span>
+</code></pre></div>
+					<p>Each rebinding prioritizes <code>with_modifiers</code>
+						highest in the order of the list it is given, then it checks for if <code>unbind</code>
+						is true and finally goes with whatever is in <code>to</code>. It goes with the first match it encounters and then moves on to the next rebinding. In <code>with_modifiers</code>
+						it is possible to set <code>to</code>
+						to <code>SKIP</code>
+						to stop looking for matches and move on to the next rebinding and <code>EXIT</code>
+						to make waybind exit.</p>
+					<p>I use <code>SKIP</code>
+						in my rebinding for grave, I want grave to rebind to escape when it is pressed on its own, keep being grave when pressed with caps lock (but only grave, caps lock is removed) and when pressed with shift to remain shift + grave. This is to mimic <a href="https://beta.docs.qmk.fm/using-qmk/advanced-keycodes/feature_grave_esc">Grave Escape</a>
+						in QMK that's running on my 60% keyboard.</p>
+					<p>I wrote the <code>EXIT</code>
+						feature as a safeguard due to my lack of confidence in my ability to write correct code. If waybind starts to act funky I can press the key combination and make waybind exit, systemd will handle restarting it if configured with <code>Restart=always</code>.</p>
+					<p>All available key codes can be found <a href="https://github.com/arnarg/waybind/blob/master/src/ecodes.go">here</a>.</p>
+					<p>But feel free to inspect the <a href="https://github.com/arnarg/waybind">code</a>.</p>
+					<p>Here's how I run it:</p>
+					<ul>
+						<li>Create group <code>uinput</code>.</li>
+						<li>Create user <code>waybind</code>
+							and add it as a member of <code>uinput</code>
+							and <code>input</code>.</li>
+						<li>Add a <a href="https://github.com/arnarg/waybind/blob/master/udev/99-uinput.rules">udev rule</a>
+							to make <code>uinput</code>
+							group be able to read and write to uinput.</li>
+						<li>Create a systemd service that runs waybind as user <code>waybind</code>. Additionally I add <code>PrivateNetwork=true</code>
+							to the service so that it runs in its own network namespace, disconnected from the internet. More info <a href="https://www.freedesktop.org/software/systemd/man/systemd.exec.html#PrivateNetwork=">here</a>.</li>
+					</ul>
+					<p>I have packaged waybind for Nix in my local repository <a href="https://github.com/arnarg/config/blob/master/packages/waybind/default.nix">here</a>
+						and made a module to set up the aformentioned setup <a href="https://github.com/arnarg/config/blob/master/modules/programs/waybind/default.nix">here</a>.</p>
+					<p>I hope this is useful to someone else.</p>
+					<p>
+						<strong>
+							Discuss on
+							<a href="https://news.ycombinator.com/item?id=22843070">
+								Hacker News
+							</a>
+							or
+							<a href="https://www.reddit.com/r/linux/comments/fzc1bg/waybind_dead_simple_remapper_for_wayland_based_on/">
+								Reddit
+							</a>
+						</strong>
+					</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="py-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>
