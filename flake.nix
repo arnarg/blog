@@ -5,7 +5,6 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     nixtml.url = "github:arnarg/nixtml";
-    # nixtml.url = "/home/arnar/Code/personal/nixtml";
   };
 
   outputs =

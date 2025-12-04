@@ -569,7 +569,37 @@ in
   };
 
   website.content.mdProcessor = {
-    settings.highlight.style = "gruvbox-dark";
+    settings.highlight.style = "gruvbox-dark-medium";
+    extraPythonPackages = [
+      # Add pygments-styles: https://pygments-styles.org/
+      (
+        let
+          pname = "pygments-styles";
+          version = "0.3.0";
+        in
+        pkgs.python3Packages.buildPythonPackage {
+          inherit pname version;
+          pyproject = true;
+
+          src = pkgs.fetchFromGitHub {
+            owner = "lepture";
+            repo = pname;
+            rev = version;
+            sha256 = "sha256-3tVbeoDCDwHczst9Z22iVBzXfCDoAPjHBYBFzt+CXDY=";
+          };
+
+          build-system = with pkgs.python3Packages; [
+            setuptools
+            setuptools-scm
+          ];
+
+          dependencies = with pkgs.python3Packages; [
+            setuptools
+            pygments
+          ];
+        }
+      )
+    ];
   };
 
   build.extraPackages.stylesheetPackage = pkgs.stdenv.mkDerivation (finalAttrs: {
