@@ -71,34 +71,34 @@
 					<h2>Waybind</h2>
 					<p>With the help of a couple of libraries (they had to be audited as well) it was really not a difficult task to support a two key combination remapping. It ended up being less than 500 lines of go code, not including the go modules I used to read the keyboard events and write to uinput, so it should be trivial to audit. It does not and will not support more complicated macros like Hawck.</p>
 					<p>All it needs is a YAML config file similar to the following:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C">device</span><span style="color: #DDD">: /dev/input/event0 </span><span style="color: #928374; font-style: italic"># Path to the input device to be read</span>
-<span style="color: #8EC07C">rebinds</span><span style="color: #DDD">:</span>
-<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># Binds KEY_GRAVE to KEY_ESC</span>
-<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># If modifier KEY_CAPSLOCK is also pressed then it&#39;s still KEY_GRAVE but KEY_CAPSLOCK is removed</span>
-<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># If modifier is KEY_LEFTSHIFT then it&#39;s KEY_LEFTSHIFT + KEY_GRAVE</span>
-<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_GRAVE</span>
-<span style="color: #DDD">    </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: KEY_ESC</span>
-<span style="color: #DDD">    </span><span style="color: #8EC07C">with_modifiers</span><span style="color: #DDD">:</span>
-<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
-<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: KEY_GRAVE</span>
-<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_LEFTSHIFT</span>
-<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: SKIP</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">device</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">/dev/input/event0</span><span style="color: #EBDBB2"> </span><span style="color: #928374; font-style: italic"># Path to the input device to be read</span>
+<span style="color: #8EC07C; font-weight: bold">rebinds</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #928374; font-style: italic"># Binds KEY_GRAVE to KEY_ESC</span>
+<span style="color: #EBDBB2">  </span><span style="color: #928374; font-style: italic"># If modifier KEY_CAPSLOCK is also pressed then it&#39;s still KEY_GRAVE but KEY_CAPSLOCK is removed</span>
+<span style="color: #EBDBB2">  </span><span style="color: #928374; font-style: italic"># If modifier is KEY_LEFTSHIFT then it&#39;s KEY_LEFTSHIFT + KEY_GRAVE</span>
+<span style="color: #EBDBB2">  </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">from</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_GRAVE</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">to</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_ESC</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">with_modifiers</span>:
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">modifier</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_CAPSLOCK</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">to</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_GRAVE</span>
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">modifier</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_LEFTSHIFT</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">to</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">SKIP</span>
 
-<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># Binds KEY_CAPSLOCK + KEY_BACKSPACE to KEY_DELETE</span>
-<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_BACKSPACE</span>
-<span style="color: #DDD">    </span><span style="color: #8EC07C">with_modifiers</span><span style="color: #DDD">:</span>
-<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
-<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: KEY_DELETE</span>
+<span style="color: #EBDBB2">  </span><span style="color: #928374; font-style: italic"># Binds KEY_CAPSLOCK + KEY_BACKSPACE to KEY_DELETE</span>
+<span style="color: #EBDBB2">  </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">from</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_BACKSPACE</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">with_modifiers</span>:
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">modifier</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_CAPSLOCK</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">to</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_DELETE</span>
 
-<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># KEY_CAPSLOCK + KEY_F12 will make waybind exit</span>
-<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_F12</span>
-<span style="color: #DDD">    </span><span style="color: #8EC07C">with_modifiers</span><span style="color: #DDD">:</span>
-<span style="color: #DDD">      - </span><span style="color: #8EC07C">modifier</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
-<span style="color: #DDD">        </span><span style="color: #8EC07C">to</span><span style="color: #DDD">: EXIT</span>
+<span style="color: #EBDBB2">  </span><span style="color: #928374; font-style: italic"># KEY_CAPSLOCK + KEY_F12 will make waybind exit</span>
+<span style="color: #EBDBB2">  </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">from</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_F12</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">with_modifiers</span>:
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">modifier</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_CAPSLOCK</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">to</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">EXIT</span>
 
-<span style="color: #DDD">  </span><span style="color: #928374; font-style: italic"># Completely unbind KEY_CAPSLOCK</span>
-<span style="color: #DDD">  - </span><span style="color: #8EC07C">from</span><span style="color: #DDD">: KEY_CAPSLOCK</span>
-<span style="color: #DDD">    </span><span style="color: #8EC07C">unbind</span><span style="color: #DDD">: true</span>
+<span style="color: #EBDBB2">  </span><span style="color: #928374; font-style: italic"># Completely unbind KEY_CAPSLOCK</span>
+<span style="color: #EBDBB2">  </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">from</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">KEY_CAPSLOCK</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">unbind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">true</span>
 </code></pre></div>
 					<p>Each rebinding prioritizes <code>with_modifiers</code>
 						highest in the order of the list it is given, then it checks for if <code>unbind</code>

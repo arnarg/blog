@@ -110,9 +110,9 @@
 						and <code>eth1addr</code>
 						into the MAC addresses for the different ethernet interfaces. With the NOR flash the environment can be changed and saved between reboots.</p>
 					<p>Use the following commands in the U-Boot console to set yours:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>env<span style="color: #DDD"> </span><span style="color: #FE8019">set</span><span style="color: #DDD"> </span>-f<span style="color: #DDD"> </span>ethaddr<span style="color: #DDD"> </span>aa:bb:cc:dd:ee:ff
-env<span style="color: #DDD"> </span><span style="color: #FE8019">set</span><span style="color: #DDD"> </span>-f<span style="color: #DDD"> </span>eth1addr<span style="color: #DDD"> </span>aa:bb:cc:dd:ee:fe
-env<span style="color: #DDD"> </span>save
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>env<span style="color: #EBDBB2"> </span><span style="color: #FE8019">set</span><span style="color: #EBDBB2"> </span>-f<span style="color: #EBDBB2"> </span>ethaddr<span style="color: #EBDBB2"> </span>aa:bb:cc:dd:ee:ff
+env<span style="color: #EBDBB2"> </span><span style="color: #FE8019">set</span><span style="color: #EBDBB2"> </span>-f<span style="color: #EBDBB2"> </span>eth1addr<span style="color: #EBDBB2"> </span>aa:bb:cc:dd:ee:fe
+env<span style="color: #EBDBB2"> </span>save
 </code></pre></div>
 					<h2>Bonus sanity: RTC</h2>
 					<p>Another annoyance of many SBCs is the lack of an RTC (Real Time Clock) which means that until an internet connection is established and the NTP client has fetched the correct time from a NTP server the system time is <em>very wrong</em>. This can happen rather late in the boot process.</p>

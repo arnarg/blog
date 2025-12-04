@@ -71,11 +71,11 @@
 					<p>For some reason the HDMI on the back of the Terramaster turns off after a few seconds after booting it (I can see the GRUB menu and the kernel boot log but then it turns off). This happened with any distro I tried so eventually I created a <a href="https://nixos.wiki/wiki/Creating_a_NixOS_live_CD">custom NixOS live CD</a>
 						that has a known root password and automatically starts an SSH server for me to connect to from another machine. From there I can do a <a href="https://nixos.org/nixos/manual/index.html#sec-installation">regular install of NixOS</a>.</p>
 					<p>You will need to add the following in the config for your custom live CD to enable the SSH server:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #DDD">.</span>openssh<span style="color: #DDD">.</span><span style="color: #B8BB26">enabled</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
-systemd<span style="color: #DDD">.</span>services<span style="color: #DDD">.</span>sshd<span style="color: #DDD">.</span><span style="color: #B8BB26">wantedBy</span> <span style="color: #DDD">=</span> lib<span style="color: #DDD">.</span>mkOverride <span style="color: #D3869B">40</span> <span style="color: #DDD">[</span> <span style="color: #B8BB26">&quot;multi-user.target&quot;</span> <span style="color: #DDD">];</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #8EC07C">.</span>openssh<span style="color: #8EC07C">.</span><span style="color: #D3869B">enabled</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+systemd<span style="color: #8EC07C">.</span>services<span style="color: #8EC07C">.</span>sshd<span style="color: #8EC07C">.</span><span style="color: #D3869B">wantedBy</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOverride <span style="color: #D3869B">40</span> [ <span style="color: #B8BB26">&quot;multi-user.target&quot;</span> ];
 </code></pre></div>
 					<p>And you want to enable root login:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #DDD">.</span>openssh<span style="color: #DDD">.</span><span style="color: #B8BB26">permitRootLogin</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;yes&quot;</span><span style="color: #DDD">;</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #8EC07C">.</span>openssh<span style="color: #8EC07C">.</span><span style="color: #D3869B">permitRootLogin</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;yes&quot;</span>;
 </code></pre></div>
 					<h3>Why is my CPU overheating?</h3>
 					<p>When opening the case and unplugging the fan you may notice that the fan is connected to a header marked on the PCB as <code>SYS_FAN2</code>. Well, a fan connected to this header does not spin up when the CPU heats up. It's only a 10W CPU but it can get quite hot if under load for a while uncooled. Naturally I turned to <code>lm_sensors</code>.</p>
@@ -91,8 +91,8 @@ systemd<span style="color: #DDD">.</span>services<span style="color: #DDD">.</sp
 						and <code>it87</code>
 						should be loaded and in NixOS that should be done by including the following in <code>/etc/nixos/configuration.nix</code>
 						and running <code>nixos-rebuild switch</code>.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>boot<span style="color: #DDD">.</span><span style="color: #B8BB26">extraModulePackages</span> <span style="color: #DDD">=</span> <span style="color: #FB4934">with</span> pkgs<span style="color: #DDD">.</span>linuxPackages<span style="color: #DDD">;</span> <span style="color: #DDD">[</span> it87 <span style="color: #DDD">];</span>
-boot<span style="color: #DDD">.</span><span style="color: #B8BB26">kernelModules</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span><span style="color: #B8BB26">&quot;coretemp&quot;</span> <span style="color: #B8BB26">&quot;it87&quot;</span><span style="color: #DDD">];</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>boot<span style="color: #8EC07C">.</span><span style="color: #D3869B">extraModulePackages</span> <span style="color: #8EC07C">=</span> <span style="color: #CC241D">with</span> pkgs<span style="color: #8EC07C">.</span>linuxPackages; [ it87 ];
+boot<span style="color: #8EC07C">.</span><span style="color: #D3869B">kernelModules</span> <span style="color: #8EC07C">=</span> [<span style="color: #B8BB26">&quot;coretemp&quot;</span> <span style="color: #B8BB26">&quot;it87&quot;</span>];
 </code></pre></div>
 					<p>That gives us the ability to monitor CPU temperature and current fan speed. <code>lm_sensors</code>
 						however also includes a program called <code>fancontrol</code>
@@ -103,32 +103,32 @@ boot<span style="color: #DDD">.</span><span style="color: #B8BB26">kernelModules
 						before any other <code>hwmon</code>
 						modules and in that order in order for it to work, so you might be better off running <code>pwmcontrol</code>
 						yourself.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #83A598">INTERVAL</span><span style="color: #DDD">=</span><span style="color: #D3869B">10</span>
-<span style="color: #83A598">DEVPATH</span><span style="color: #DDD">=</span><span style="color: #83A598">hwmon0</span><span style="color: #DDD">=</span>devices/platform/coretemp.0<span style="color: #DDD"> </span><span style="color: #83A598">hwmon1</span><span style="color: #DDD">=</span>devices/platform/it87.2592
-<span style="color: #83A598">DEVNAME</span><span style="color: #DDD">=</span><span style="color: #83A598">hwmon0</span><span style="color: #DDD">=</span>coretemp<span style="color: #DDD"> </span><span style="color: #83A598">hwmon1</span><span style="color: #DDD">=</span>it8613
-<span style="color: #83A598">FCTEMPS</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span>hwmon0/temp1_input
-<span style="color: #83A598">FCFANS</span><span style="color: #DDD">= </span>hwmon1/pwm3<span style="color: #DDD">=</span>hwmon1/fan3_input
-<span style="color: #83A598">MINTEMP</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">20</span>
-<span style="color: #83A598">MAXTEMP</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">60</span>
-<span style="color: #83A598">MINSTART</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">52</span>
-<span style="color: #83A598">MINSTOP</span><span style="color: #DDD">=</span>hwmon1/pwm3<span style="color: #DDD">=</span><span style="color: #D3869B">12</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #83A598">INTERVAL</span><span style="color: #8EC07C">=</span><span style="color: #D3869B">10</span>
+<span style="color: #83A598">DEVPATH</span><span style="color: #8EC07C">=</span><span style="color: #83A598">hwmon0</span><span style="color: #8EC07C">=</span>devices/platform/coretemp.0<span style="color: #EBDBB2"> </span><span style="color: #83A598">hwmon1</span><span style="color: #8EC07C">=</span>devices/platform/it87.2592
+<span style="color: #83A598">DEVNAME</span><span style="color: #8EC07C">=</span><span style="color: #83A598">hwmon0</span><span style="color: #8EC07C">=</span>coretemp<span style="color: #EBDBB2"> </span><span style="color: #83A598">hwmon1</span><span style="color: #8EC07C">=</span>it8613
+<span style="color: #83A598">FCTEMPS</span><span style="color: #8EC07C">=</span>hwmon1/pwm3<span style="color: #8EC07C">=</span>hwmon0/temp1_input
+<span style="color: #83A598">FCFANS</span><span style="color: #8EC07C">=</span><span style="color: #EBDBB2"> </span>hwmon1/pwm3<span style="color: #8EC07C">=</span>hwmon1/fan3_input
+<span style="color: #83A598">MINTEMP</span><span style="color: #8EC07C">=</span>hwmon1/pwm3<span style="color: #8EC07C">=</span><span style="color: #D3869B">20</span>
+<span style="color: #83A598">MAXTEMP</span><span style="color: #8EC07C">=</span>hwmon1/pwm3<span style="color: #8EC07C">=</span><span style="color: #D3869B">60</span>
+<span style="color: #83A598">MINSTART</span><span style="color: #8EC07C">=</span>hwmon1/pwm3<span style="color: #8EC07C">=</span><span style="color: #D3869B">52</span>
+<span style="color: #83A598">MINSTOP</span><span style="color: #8EC07C">=</span>hwmon1/pwm3<span style="color: #8EC07C">=</span><span style="color: #D3869B">12</span>
 </code></pre></div>
 					<p>After that you can simply run <code>fancontrol</code>. Most distros provide a service file for systemd or whatever init system you're using. NixOS, however, doesn't so in your <code>/etc/nixos/configuration.nix</code>
 						you can include the following.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>systemd<span style="color: #DDD">.</span>services<span style="color: #DDD">.</span><span style="color: #B8BB26">fancontrol</span> <span style="color: #DDD">=</span> <span style="color: #DDD">{</span>
-  <span style="color: #B8BB26">enable</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
-  <span style="color: #B8BB26">description</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;Fan control&quot;</span><span style="color: #DDD">;</span>
-  <span style="color: #B8BB26">wantedBy</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span><span style="color: #B8BB26">&quot;multi-user.target&quot;</span> <span style="color: #B8BB26">&quot;graphical.target&quot;</span> <span style="color: #B8BB26">&quot;rescue.target&quot;</span><span style="color: #DDD">];</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>systemd<span style="color: #8EC07C">.</span>services<span style="color: #8EC07C">.</span><span style="color: #D3869B">fancontrol</span> <span style="color: #8EC07C">=</span> {
+  <span style="color: #D3869B">enable</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Fan control&quot;</span>;
+  <span style="color: #D3869B">wantedBy</span> <span style="color: #8EC07C">=</span> [<span style="color: #B8BB26">&quot;multi-user.target&quot;</span> <span style="color: #B8BB26">&quot;graphical.target&quot;</span> <span style="color: #B8BB26">&quot;rescue.target&quot;</span>];
 
-  <span style="color: #B8BB26">unitConfig</span> <span style="color: #DDD">=</span> <span style="color: #DDD">{</span>
-    <span style="color: #B8BB26">Type</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;simple&quot;</span><span style="color: #DDD">;</span>
-  <span style="color: #DDD">};</span>
+  <span style="color: #D3869B">unitConfig</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">Type</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;simple&quot;</span>;
+  };
 
-  <span style="color: #B8BB26">serviceConfig</span> <span style="color: #DDD">=</span> <span style="color: #DDD">{</span>
-    <span style="color: #B8BB26">ExecStart</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;${</span>pkgs<span style="color: #DDD">.</span>lm_sensors<span style="color: #B8BB26">}/bin/fancontrol&quot;</span><span style="color: #DDD">;</span>
-    <span style="color: #B8BB26">Restart</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;always&quot;</span><span style="color: #DDD">;</span>
-  <span style="color: #DDD">};</span>
-<span style="color: #DDD">};</span>
+  <span style="color: #D3869B">serviceConfig</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">ExecStart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;</span><span style="color: #D3869B">${</span>pkgs<span style="color: #8EC07C">.</span>lm_sensors<span style="color: #D3869B">}</span><span style="color: #B8BB26">/bin/fancontrol&quot;</span>;
+    <span style="color: #D3869B">Restart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;always&quot;</span>;
+  };
+};
 </code></pre></div>
 					<p>This will make <code>fancontrol</code>
 						start on boot and will spin up the fan under load.</p>
@@ -152,63 +152,63 @@ boot<span style="color: #DDD">.</span><span style="color: #B8BB26">kernelModules
 					<h4>Packaging for NixOS</h4>
 					<p>I'm not gonna go too deep into packaging for Nix but I will show a working derivation below. I recommend reading <a href="https://nixos.org/nixos/nix-pills/why-you-should-give-it-a-try.html">Nix pills</a>
 						if you're interested in learning Nix.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #DDD">{</span> stdenv<span style="color: #DDD">,</span> fetchFromGitHub<span style="color: #DDD">,</span> kernel <span style="color: #DDD">}:</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ stdenv, fetchFromGitHub, kernel }:
 
-stdenv<span style="color: #DDD">.</span>mkDerivation <span style="color: #FB4934">rec</span> <span style="color: #DDD">{</span>
-  <span style="color: #B8BB26">name</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;hddled_tmj33-${</span>version<span style="color: #B8BB26">}-${</span>kernel<span style="color: #DDD">.</span>version<span style="color: #B8BB26">}&quot;</span><span style="color: #DDD">;</span>
-  <span style="color: #B8BB26">version</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;0.1&quot;</span><span style="color: #DDD">;</span>
+stdenv<span style="color: #8EC07C">.</span>mkDerivation <span style="color: #CC241D">rec</span> {
+  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;hddled_tmj33-</span><span style="color: #D3869B">${</span>version<span style="color: #D3869B">}</span><span style="color: #B8BB26">-</span><span style="color: #D3869B">${</span>kernel<span style="color: #8EC07C">.</span>version<span style="color: #D3869B">}</span><span style="color: #B8BB26">&quot;</span>;
+  <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;0.1&quot;</span>;
 
-  <span style="color: #B8BB26">src</span> <span style="color: #DDD">=</span> fetchFromGitHub <span style="color: #DDD">{</span>
-    <span style="color: #B8BB26">owner</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;arnarg&quot;</span><span style="color: #DDD">;</span>
-    <span style="color: #B8BB26">repo</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;hddled_tmj33&quot;</span><span style="color: #DDD">;</span>
-    <span style="color: #B8BB26">rev</span> <span style="color: #DDD">=</span> version<span style="color: #DDD">;</span>
-    <span style="color: #B8BB26">sha256</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;0izz2xxg47rsj88pfqrx035n8hz78bqna41vljwc29r8aid9rnk9&quot;</span><span style="color: #DDD">;</span>
-  <span style="color: #DDD">};</span>
+  <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> fetchFromGitHub {
+    <span style="color: #D3869B">owner</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;arnarg&quot;</span>;
+    <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;hddled_tmj33&quot;</span>;
+    <span style="color: #D3869B">rev</span> <span style="color: #8EC07C">=</span> version;
+    <span style="color: #D3869B">sha256</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;0izz2xxg47rsj88pfqrx035n8hz78bqna41vljwc29r8aid9rnk9&quot;</span>;
+  };
 
-  <span style="color: #B8BB26">nativeBuildInputs</span> <span style="color: #DDD">=</span> kernel<span style="color: #DDD">.</span>moduleBuildDependencies<span style="color: #DDD">;</span>
+  <span style="color: #D3869B">nativeBuildInputs</span> <span style="color: #8EC07C">=</span> kernel<span style="color: #8EC07C">.</span>moduleBuildDependencies;
 
   <span style="color: #928374; font-style: italic"># We don&#39;t want to depmod yet, just build and package the module</span>
-  <span style="color: #B8BB26">preConfigure</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&#39;&#39;</span>
+  <span style="color: #D3869B">preConfigure</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&#39;&#39;</span>
 <span style="color: #B8BB26">    sed -i &#39;s|depmod|#depmod|&#39; Makefile</span>
-<span style="color: #B8BB26">  &#39;&#39;</span><span style="color: #DDD">;</span>
+<span style="color: #B8BB26">  &#39;&#39;</span>;
 
-  <span style="color: #B8BB26">makeFlags</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span>
-    <span style="color: #B8BB26">&quot;TARGET=${</span>kernel<span style="color: #DDD">.</span>modDirVersion<span style="color: #B8BB26">}&quot;</span>
-    <span style="color: #B8BB26">&quot;KERNEL_MODULES=${</span>kernel<span style="color: #DDD">.</span>dev<span style="color: #B8BB26">}/lib/modules/${</span>kernel<span style="color: #DDD">.</span>modDirVersion<span style="color: #B8BB26">}&quot;</span>
-    <span style="color: #B8BB26">&quot;MODDESTDIR=$(out)/lib/modules/${</span>kernel<span style="color: #DDD">.</span>modDirVersion<span style="color: #B8BB26">}/kernel/drivers/misc&quot;</span>
-  <span style="color: #DDD">];</span>
+  <span style="color: #D3869B">makeFlags</span> <span style="color: #8EC07C">=</span> [
+    <span style="color: #B8BB26">&quot;TARGET=</span><span style="color: #D3869B">${</span>kernel<span style="color: #8EC07C">.</span>modDirVersion<span style="color: #D3869B">}</span><span style="color: #B8BB26">&quot;</span>
+    <span style="color: #B8BB26">&quot;KERNEL_MODULES=</span><span style="color: #D3869B">${</span>kernel<span style="color: #8EC07C">.</span>dev<span style="color: #D3869B">}</span><span style="color: #B8BB26">/lib/modules/</span><span style="color: #D3869B">${</span>kernel<span style="color: #8EC07C">.</span>modDirVersion<span style="color: #D3869B">}</span><span style="color: #B8BB26">&quot;</span>
+    <span style="color: #B8BB26">&quot;MODDESTDIR=$(out)/lib/modules/</span><span style="color: #D3869B">${</span>kernel<span style="color: #8EC07C">.</span>modDirVersion<span style="color: #D3869B">}</span><span style="color: #B8BB26">/kernel/drivers/misc&quot;</span>
+  ];
 
-  <span style="color: #B8BB26">meta</span> <span style="color: #DDD">=</span> <span style="color: #FB4934">with</span> stdenv<span style="color: #DDD">.</span>lib<span style="color: #DDD">;</span> <span style="color: #DDD">{</span>
-    <span style="color: #B8BB26">description</span> <span style="color: #DDD">=</span> <span style="color: #B8BB26">&quot;A linux module for controlling the HDD LEDs on Terramaster NAS devices with Intel J33xx CPU&quot;</span><span style="color: #DDD">;</span>
-    <span style="color: #B8BB26">homepage</span> <span style="color: #DDD">=</span> <span style="color: #DDD">https://github.com/arnarg/hddled_tmj33;</span>
-    <span style="color: #B8BB26">license</span> <span style="color: #DDD">=</span> licenses<span style="color: #DDD">.</span>gpl2<span style="color: #DDD">;</span>
-    <span style="color: #B8BB26">platforms</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span> <span style="color: #B8BB26">&quot;x86_64-linux&quot;</span> <span style="color: #DDD">];</span>
-  <span style="color: #DDD">};</span>
-<span style="color: #DDD">}</span>
+  <span style="color: #D3869B">meta</span> <span style="color: #8EC07C">=</span> <span style="color: #CC241D">with</span> stdenv<span style="color: #8EC07C">.</span>lib; {
+    <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;A linux module for controlling the HDD LEDs on Terramaster NAS devices with Intel J33xx CPU&quot;</span>;
+    <span style="color: #D3869B">homepage</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">https://github.com/arnarg/hddled_tmj33</span>;
+    <span style="color: #D3869B">license</span> <span style="color: #8EC07C">=</span> licenses<span style="color: #8EC07C">.</span>gpl2;
+    <span style="color: #D3869B">platforms</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;x86_64-linux&quot;</span> ];
+  };
+}
 </code></pre></div>
 					<p>This derivation then needs to be appended to the list of extra module packages.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #DDD">{</span> pkgs<span style="color: #DDD">,</span> lib<span style="color: #DDD">,</span> <span style="color: #DDD">...</span> <span style="color: #DDD">}:</span>
-<span style="color: #FB4934">let</span>
-  <span style="color: #B8BB26">hddled_tmj33</span> <span style="color: #DDD">=</span> lib<span style="color: #DDD">.</span>callPackage <span style="color: #DDD">./hddled_tmj33.nix</span> <span style="color: #DDD">{</span> <span style="color: #B8BB26">kernel</span> <span style="color: #DDD">=</span> pkgs<span style="color: #DDD">.</span>linuxPackages<span style="color: #DDD">.</span>kernel<span style="color: #DDD">;</span> <span style="color: #DDD">};</span>
-<span style="color: #FB4934">in</span> <span style="color: #DDD">{</span>
-  <span style="color: #DDD">...</span>
-  boot<span style="color: #DDD">.</span><span style="color: #B8BB26">extraModulePackages</span> <span style="color: #DDD">=</span> <span style="color: #FB4934">with</span> pkgs<span style="color: #DDD">.</span>linuxPackages<span style="color: #DDD">;</span> <span style="color: #DDD">[</span> it87 hddled_tmj33 <span style="color: #DDD">];</span>
-  boot<span style="color: #DDD">.</span><span style="color: #B8BB26">kernelModules</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span><span style="color: #B8BB26">&quot;coretemp&quot;</span> <span style="color: #B8BB26">&quot;it87&quot;</span> <span style="color: #B8BB26">&quot;hddled_tmj33&quot;</span><span style="color: #DDD">];</span>
-  <span style="color: #DDD">...</span>
-<span style="color: #DDD">}</span>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ pkgs, lib, <span style="color: #8EC07C">...</span> }:
+<span style="color: #CC241D">let</span>
+  <span style="color: #D3869B">hddled_tmj33</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>callPackage <span style="color: #B8BB26">./hddled_tmj33.nix</span> { <span style="color: #D3869B">kernel</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>linuxPackages<span style="color: #8EC07C">.</span>kernel; };
+<span style="color: #CC241D">in</span> {
+  <span style="color: #8EC07C">...</span>
+  boot<span style="color: #8EC07C">.</span><span style="color: #D3869B">extraModulePackages</span> <span style="color: #8EC07C">=</span> <span style="color: #CC241D">with</span> pkgs<span style="color: #8EC07C">.</span>linuxPackages; [ it87 hddled_tmj33 ];
+  boot<span style="color: #8EC07C">.</span><span style="color: #D3869B">kernelModules</span> <span style="color: #8EC07C">=</span> [<span style="color: #B8BB26">&quot;coretemp&quot;</span> <span style="color: #B8BB26">&quot;it87&quot;</span> <span style="color: #B8BB26">&quot;hddled_tmj33&quot;</span>];
+  <span style="color: #8EC07C">...</span>
+}
 </code></pre></div>
 					<h3>Plex Media Server</h3>
 					<p>To install Plex Media Server you must include the following in your <code>/etc/nixos/configuration.nix</code>.</p>
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #928374; font-style: italic"># Plex has an unfree license</span>
-nixpkgs<span style="color: #DDD">.</span>config<span style="color: #DDD">.</span><span style="color: #B8BB26">allowUnfree</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+nixpkgs<span style="color: #8EC07C">.</span>config<span style="color: #8EC07C">.</span><span style="color: #D3869B">allowUnfree</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
 
 <span style="color: #928374; font-style: italic"># For hardware transcoding</span>
-environment<span style="color: #DDD">.</span><span style="color: #B8BB26">systemPackages</span> <span style="color: #DDD">=</span> <span style="color: #DDD">[</span> pkgs<span style="color: #DDD">.</span>libva <span style="color: #DDD">];</span>
+environment<span style="color: #8EC07C">.</span><span style="color: #D3869B">systemPackages</span> <span style="color: #8EC07C">=</span> [ pkgs<span style="color: #8EC07C">.</span>libva ];
 
-services<span style="color: #DDD">.</span>plex<span style="color: #DDD">.</span><span style="color: #B8BB26">enable</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+services<span style="color: #8EC07C">.</span>plex<span style="color: #8EC07C">.</span><span style="color: #D3869B">enable</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
 <span style="color: #928374; font-style: italic"># If you have enabled the firewall</span>
 <span style="color: #928374; font-style: italic"># It will open necessary ports in your firewall</span>
-service<span style="color: #DDD">.</span>ples<span style="color: #DDD">.</span><span style="color: #B8BB26">openFirewall</span> <span style="color: #DDD">=</span> <span style="color: #D3869B">true</span><span style="color: #DDD">;</span>
+service<span style="color: #8EC07C">.</span>ples<span style="color: #8EC07C">.</span><span style="color: #D3869B">openFirewall</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
 </code></pre></div>
 					<p>After getting a Plex Pass subscription and turning on hardware transcoding for this server I can transcode videos with fairly low CPU utilization.</p>
 					<h2>Conclusion</h2>
