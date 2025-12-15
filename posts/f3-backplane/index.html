@@ -56,16 +56,16 @@
 
 					<p>Essentially what I wanted was this:</p>
 					<p><img alt="Drake Hotline Bling meme with before and after picture of NAS" src="/images/posts/f3-backplane/before-after-f2-221.jpg"></p>
-					<h2>Researching my options</h2>
+					<h2 id="researching-my-options">Researching my options</h2>
 					<p>First I need to get out of the way the fact that there is an internal USB connector on the motherboard that contains a USB stick that ships with the NAS, that is used for downloading and bootstrapping TOS <em>onto the storage drives</em>. This USB header is only USB 2.0 though so it's not an option for this purpose.</p>
 					<p>Back when I first got the NAS I did add an extra RAM stick in the single RAM slot on the motherboard and I remembered seeing a PCIe (PCI Express) x4 connector on the motherboard that the backplane PCB connects into. As I recently got interested in designing PCBs I thought it might be interesting to see if I could come up with something, but when inspecting the existing backplane I noticed that there was no IC (integrated circuit) on there converting PCIe to SATA, instead it only contained some power circuitry and the SATA connectors were wired directly to the PCIe edge connector. This was a non-standard pinout and not PCIe at all, no room for expansion! But hey! This generation of NASes from Terramaster also include 4 and 5-bay units, how do they do that? Looking at the specs for Intel J3355 I could see that the CPU has 2 SATA ports and 6 lanes of PCIe gen 2 which would mean that the other models must be utilizing those PCIe lanes somehow to expand the number of SATA ports.</p>
 					<p>What followed was days of me scouring image search on duckduckgo and google to try to find high resolution pictures of the backplane PCB from either the 4 or 5-bay model.</p>
-					<h2>Reverse engineering</h2>
+					<h2 id="reverse-engineering">Reverse engineering</h2>
 					<p>I found some great pictures from this <a href="https://www.techpowerup.com/review/terramaster-f5-422-5-bay-nas/4.html">review of Terramaster F5-422</a>
 						and from those pictures I could identify that they're using 2 ASMedia ASM1061 ICs to get the SATA port count from 2 to 5. After some research I found out that ASM1061 is a 1-lane PCIe gen 2 SATA controller with 2 SATA ports, the first one is wired to port 3 and 4 on the backplane and the second one is wired to port 5 only. This was potentially good news for me as this means that the PCIe connector on the motherboard should include 2 PCIe x1 interfaces and looking at the back of the motherboard on my Terramaster F2-221 I could see that the pins that seemed to carry the PCIe traces on the F5-422 backplane were indeed wired up and it makes sense that they didn't want to have to manufacture different motherboards for the different models.</p>
 					<p><img alt="Picture of the PCIe pinout." src="/images/posts/f3-backplane/f3-connector-backside.jpg"></p>
 					<p>Quite a few differential pairs can be seen in this picture.</p>
-					<h3>PCI Express</h3>
+					<h3 id="pci-express">PCI Express</h3>
 					<p>Some of the pictures were still a bit low resolution and I had to zoom in a lot and follow blurry traces but I could verify that the traces for the first 2 SATA ports matched the pins on my backplane PCB. Thankfully I could find a datasheet for ASM1061, and therefor had a pinout for the IC, so I knew which pins were the PCIe lines but all the differential pairs near the ICs and the PCIe connector went to vias and were then routed on internal layers which made it impossible for me to know for sure which differential pair was <code>TX</code>, <code>RX</code>
 						and <code>REFCLK</code>. I could however identify that one pin on the PCIe connector was connected to <code>PERST#</code>
 						on the ASM1061 ICs, that's something!</p>
@@ -259,14 +259,14 @@
 					<blockquote>
 						<p>You may also have noticed that some of the pins are marked <code>?</code>. Most of these pins were not connected on my backplane and/or I could not figure out where they were routed to as those were also mostly routed on internal layers.</p>
 					</blockquote>
-					<h3>Power circuits</h3>
+					<h3 id="power-circuits">Power circuits</h3>
 					<p>As stated earlier, there are no ICs on the F2-221's backplane that handle any PCIe signals, but one side of the PCB is full of components. After taking close-up pictures of the PCB so that I could identify the components and see where the traces go between them I recreated the schematic in Kicad. This circuit consisted of mostly mostfets, diodes, resistors and capacitors. Now, I am no electrical engineer but after staring at the schematic, trying to break it apart into chunks to make sense of it and doing a lot of research online I somehow figured that these were load switches with a slow starter, one for each power rail on each SATA port (meaning 4 load switches on F2-221 and 10 on the F5-422). One of the ground pins (P4) on the SATA connectors was also used as the enable pin for these load switches, as it's pulled to ground by the hard drive when connected. I figured this was done in combination with the slow start circuit to make hot-plugging the hard drives safe by preventing sparking across the connector and the drive due to the high initial inrush current.</p>
 					<p>Not being too eager to solder all these discrete components on my backplane PCB, I decided to find a complete integrated load switch IC with a built-in slow starter and finally went with the <a href="https://www.onsemi.com/products/power-management/protected-power-switches/ncp45521">onsemi NCP45521-L</a>.</p>
-					<h2>Prototype</h2>
+					<h2 id="prototype">Prototype</h2>
 					<p>At this point I had spent <em>a lot of time</em>
 						figuring out the pinout of the connector, and especially trying to figure out the purpose of the different unknown pins on the connector. And I figured it was time to just create a prototype PCB by routing what I <em>did</em>
 						know and then breaking most of the other pins to test points that I can probe and try to figure out the purpose of.</p>
-					<h3>SSD selection</h3>
+					<h3 id="ssd-selection">SSD selection</h3>
 					<p>Since beginning this process I had mostly been concerned with what would be possible and not what kind of boot SSD I wanted. Initially I wondered if I could add a SATA port by incorporating the same ASM1061 IC and then taping a SATA SSD somewhere inside the case. Then I had the ~~brilliant~~ obvious idea of trying to fit an M.2 connector on there, and as luck would have it there was <em>just enough</em>
 						room for the connector between the mounting rails that the backplane screws into, and by <em>just enough</em>
 						I mean there's less than a millimeter on each side!</p>
@@ -277,14 +277,14 @@
 						PCIe and no extra controller is needed, just wire the PCIe lines directly to the M-key M.2 slot and insert an SSD. This makes the PCB routing much simpler and costs less as we don't need to source any extra controller and there is more options for NVMe SSDs than SATA M.2 available. NVMe SSDs generally have 4 lanes of PCIe gen 3 or higher so in a way we're <em>"wasting"</em>
 						3 lanes and capping the 1 lane we do have to gen 2 speeds which in the end will not be faster that SATA speeds, but even taking that into account it makes no sense to go with anything else as it's cheaper and simpler for our use case. I ended up grabbing a Patriot P300 128GB for only €14.90 locally, that's cheaper than I could find a PCIe card with an ASM1061 IC.</p>
 					<p>I did however have some concern with if the BIOS would support booting directly from an NVMe drive, but then decided I would be ok with having an internal USB 2.0 usb stick to store the boot partition in the worst case.</p>
-					<h3>Designing the prototype PCB</h3>
+					<h3 id="designing-the-prototype-pcb">Designing the prototype PCB</h3>
 					<p>Even though I was creating my own PCB I was constrained with the mounting hardware that attaches the backplane to the case. Screw holes had to be positioned quite strictly in relation to the PCIe edge connector and the PCB had some restrictions for size and shouldn't restrict airflow too much. For those reasons, this prototype was also important for verifying that everything fits nicely in the case.</p>
 					<p>I first measured all different parts of the PCB using a ruler and calipers and then took a picture of the PCB as straight on as I possibly could and then tried to remove any lens distortion before importing the picture into Kicad and start positioning the PCIe connector, screw holes and the outline from the measurements and checking alignment with the picture. Then I made the schematic for the different components and layed them out on the PCB as best I could, but I wasn't <em>too</em>
 						careful about placement as I knew this was only a temporary prototype and added testpoints for various pins. I discovered the 3.3V rail on the PCIe connector pretty late in this process and therefor there is a buck converter taking 5V and converting it to 3.3V for the NVMe SSD.</p>
 					<p>I sent my design to JLCPCB, ordered a 4-layer PCB and a couple of weeks later I had this!</p>
 					<p><img alt="Picture of partially assembled prototype PCB on the mounting rails for the case." src="/images/posts/f3-backplane/f3-backplane-prototype.jpg"></p>
 					<p>It's a bit of a weird shape because of the buck converter on the top right but look at how perfectly the SSD fits!</p>
-					<h3>Testing the prototype PCB</h3>
+					<h3 id="testing-the-prototype-pcb">Testing the prototype PCB</h3>
 					<p>This was my first time soldering DFN packages and they're <strong><em>tiny</em></strong>! Because I don't have a microscope or anything to visually inspect my soldering and these components were mostly just handling power anyway I just checked for shorts between power and ground and tried to take close-ups using my phone to see if I could spot any shorts. The technique that ended up working well for me to solder on these DFN packages without a stencil is to put what can only be described as <em>way too much</em>
 						solder paste on the pads and then pushing the IC in the pool of solder, when the solder melts from the heat of my hot air station the IC will float on top and then I push down on it with tweezers and all excess solder will squeeze out and bead up, hopefully landing somewhere on the solder mask, where I can pick it up later once it's solid.</p>
 					<p>After a few attempts of successfully soldering all the ICs and the pins of the M.2 connector and actually plugging it into the motherboard, I booted it and there it was in the list of boot options, <code>Patriot P300 128GB</code>! It works! And I can boot from it directly!</p>
@@ -294,7 +294,7 @@
 					<p>I also plugged in the hard drives and not as surprisingly they worked fine too!</p>
 					<p>So the prototype that I made as a last resort to be able to probe and debug actually just worked perfectly already and I don't care too much what the unidentified pins do anymore. If anyone <em>does know</em>
 						or has a F5-422 and a multi-meter to figure it out, please let me know, but eh! ¯\_(ツ)_/¯</p>
-					<h2>Moving on to V1.0</h2>
+					<h2 id="moving-on-to-v10">Moving on to V1.0</h2>
 					<p>Even though the prototype worked perfectly fine, that being the end of the story with all the test points and having it sitting <em>slightly</em>
 						crooked in the case (not to mention <strong><em>GREEN!</em></strong>), wasn't quite as satisfying as making a <em>polished</em>
 						and <em>final</em>
@@ -313,7 +313,7 @@
  Timing buffered disk reads: 1222 MB in  3.00 seconds = 407.22 MB/sec
 </code></pre></div>
 					<p>This isn't very fast for an NVMe SSD but this is expected as it's only using 1 lane of PCIe gen 2. This is however totally fine for my use case.</p>
-					<h2>Conclusion</h2>
+					<h2 id="conclusion">Conclusion</h2>
 					<p>All in all getting to this point was a lot of work and I learned a ton and I'm very happy with the results. I have made the Kicad project available on <a href="https://github.com/arnarg/f3_backplane">GitHub</a>
 						and hopefully it is useful to someone else too.</p>
 					<div class="footnote">

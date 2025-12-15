@@ -51,10 +51,10 @@
 					<p>Because muscle memory is a thing I have been using Karabiner Elements to remap the keyboard on my work macbook pro but I could not find a suitable alternative for Linux when using a Wayland compositor.</p>
 					<!--more-->
 
-					<h3>Why this is difficult on Wayland</h3>
+					<h3 id="why-this-is-difficult-on-wayland">Why this is difficult on Wayland</h3>
 					<p>In the old X11 system any application could read the keyboard input from the X server (I do not have enough knowledge about X11 to claim this fact but that's how I understand it). This makes it easier to write keyboard remappers for it, as well as more neferious things like key loggers.</p>
 					<p>However, with the design on Wayland it was decided that for security's sake only the active window should be able to read the incoming keyboard events. This is to protect against key loggers but makes it difficult to write a keyboard remapper at the compositor level until some protocol has been developed for it.</p>
-					<h3>Let's move up the chain</h3>
+					<h3 id="lets-move-up-the-chain">Let's move up the chain</h3>
 					<p>It is however possible to take the Display server/Compositor out of the equation entirely. If you inspect the directory <code>/dev/input</code>
 						you will find a bunch of files called <code>eventX</code>
 						(X being some number). These are your input devices and they can be read to get all events from them. Traditionally, distros make these files owned by the input group, so if your user is a part of that group you can read and write to those devices. You can even claim a device so that you get exclusive access to it, that is to say only you will get the events and unless you do something with those events the keyboard will appear to not work until it is released again.</p>
@@ -68,7 +68,7 @@
 					<p>What all this means is that a software can be written that claims an input device, reads the events, manipulates them in some way (remap) and writes them to a virtual keyboard. This is the approach used by the keyboard rebinding daemon <a href="https://github.com/snyball/Hawck">Hawck</a>
 						which I did consider using but due to its complexity and bigger scope than I needed (it supports writing macros in lua) I decided against it. The complexity of the software especially makes it difficult to audit the software which in this case I think is very important as this is a prime location to write in a key logger, remember this software by design has to be able to read every single event your keyboard emits.</p>
 					<p>So naturally I wrote my own.</p>
-					<h2>Waybind</h2>
+					<h2 id="waybind">Waybind</h2>
 					<p>With the help of a couple of libraries (they had to be audited as well) it was really not a difficult task to support a two key combination remapping. It ended up being less than 500 lines of go code, not including the go modules I used to read the keyboard events and write to uinput, so it should be trivial to audit. It does not and will not support more complicated macros like Hawck.</p>
 					<p>All it needs is a YAML config file similar to the following:</p>
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">device</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">/dev/input/event0</span><span style="color: #EBDBB2"> </span><span style="color: #928374; font-style: italic"># Path to the input device to be read</span>

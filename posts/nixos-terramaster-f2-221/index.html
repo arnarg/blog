@@ -58,15 +58,15 @@
 
 					<p>When I was looking at potential consumer NAS boxes I noticed in a teardown of <a href="https://www.terra-master.com/global/products/homesoho-nas/f2-221.html">Terramaster F2-221</a>
 						that there's an internal USB header with a USB stick running the OS which gave me hope of running any OS that I want on it (that and that it has a standard x86_64 Intel CPU). This may very well be the case with other NASes from other manufacturers but I'm not too familiar with it.</p>
-					<h3>The Hardware</h3>
+					<h3 id="the-hardware">The Hardware</h3>
 					<p>The Terramaster F2-221 has an Intel Celeron J3355 CPU and 2GB of DDR3 memory but has an unpopulated SODIMM slot so you can upgrade the memory. The J3355 has Intel HD Graphics 500 with Quick Sync support which makes it capable of Hardware-Accelerated Transcoding in Plex. Terramaster claims that it can do two simultaneous 4K streams but I have not put that to the test.</p>
 					<p>Opening it up is very simple, there's just 4 screws in the back of the unit that need to be unscrewed, even the screwdriver is included. After that you can unplug the fan and slide the aluminum shroud off the unit, revealing the motherboard. From there you can pop in extra RAM without unscrewing the motherboard. Terramaster does sell some "compatible" RAM on Amazon but I popped in a DDR3 1600MHz 4GB stick I had on hand and it worked perfectly fine.</p>
-					<h3>The Software</h3>
+					<h3 id="the-software">The Software</h3>
 					<p>The USB stick plugged into the internal header doesn't actually run the OS as it turns out. It just boots a minimal environment exposing a web server which you can navigate to to actually install Terramaster OS (TOS) by going through a fairly user friendly wizard.</p>
 					<p>It partitions your hard drives installed in the unit and raids them using mdadm, one for the operating system and one for the data storage (I'm writing this from memory, but that's the gist of it). On the raided data partition it uses btrfs.</p>
 					<p>Now, I already have a couple of drives that are formatted with btrfs in raid1 configuration. That means that I would need to wipe them to install TOS on there and then migrate my files back on to them. The installation wizard does display a warning about this.</p>
 					<p>For those reasons and that TOS is not that great for my requirements I decided to install my own NAS OS (this was my plan before buying the unit). I do however realize that I'm probably not the average user that would buy this and TOS does look fairly user friendly.</p>
-					<h2>Improving the software</h2>
+					<h2 id="improving-the-software">Improving the software</h2>
 					<p>In my aformentioned NAS VM I'm running NixOS and it's been an absolute bliss. If you're not familiar with NixOS, it has a completely declarative approach to configuration management and has atomic upgrades and rollbacks. It does have it's own functional language, Nix, for configuring the system. You can configure the system without knowing much about Nix but it's totally worth learning if you want to get serious about NixOS. <a href="https://nixos.org/nixos/about.html">Read more about NixOS</a>.</p>
 					<p>For some reason the HDMI on the back of the Terramaster turns off after a few seconds after booting it (I can see the GRUB menu and the kernel boot log but then it turns off). This happened with any distro I tried so eventually I created a <a href="https://nixos.wiki/wiki/Creating_a_NixOS_live_CD">custom NixOS live CD</a>
 						that has a known root password and automatically starts an SSH server for me to connect to from another machine. From there I can do a <a href="https://nixos.org/nixos/manual/index.html#sec-installation">regular install of NixOS</a>.</p>
@@ -77,7 +77,7 @@ systemd<span style="color: #8EC07C">.</span>services<span style="color: #8EC07C"
 					<p>And you want to enable root login:</p>
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>services<span style="color: #8EC07C">.</span>openssh<span style="color: #8EC07C">.</span><span style="color: #D3869B">permitRootLogin</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;yes&quot;</span>;
 </code></pre></div>
-					<h3>Why is my CPU overheating?</h3>
+					<h3 id="why-is-my-cpu-overheating">Why is my CPU overheating?</h3>
 					<p>When opening the case and unplugging the fan you may notice that the fan is connected to a header marked on the PCB as <code>SYS_FAN2</code>. Well, a fan connected to this header does not spin up when the CPU heats up. It's only a 10W CPU but it can get quite hot if under load for a while uncooled. Naturally I turned to <code>lm_sensors</code>.</p>
 					<blockquote>
 						<p><code>nix-shell -p lm_sensors</code>
@@ -132,7 +132,7 @@ boot<span style="color: #8EC07C">.</span><span style="color: #D3869B">kernelModu
 </code></pre></div>
 					<p>This will make <code>fancontrol</code>
 						start on boot and will spin up the fan under load.</p>
-					<h3>Lets control those HDD LEDs</h3>
+					<h3 id="lets-control-those-hdd-leds">Lets control those HDD LEDs</h3>
 					<p>All the Terramaster NAS have 2-5 LEDs (depending on how many drives it takes) that indicate if a drive is installed or not. Each of the HDD LEDs are bi-color (red and green). When you boot this NAS into another distro than TOS you will notice that you have no way of controlling the LEDs.</p>
 					<p>In TOS you can install an SSH server, so after doing that and browsing the system a little bit I noticed that a kernel module called <code>led_drv_TMJ33</code>
 						was loaded. Even though this was looking promising, after looking for this module online I came up empty. Finally I decided to email their support asking for the source, because as far as I understand kernel modules distributed with products <a href="https://yarchive.net/comp/linux/gpl_modules.html">must be GPL compliant</a>. After a few emails back and forth they agreed to send me the source code.</p>
@@ -149,7 +149,7 @@ boot<span style="color: #8EC07C">.</span><span style="color: #D3869B">kernelModu
 </code></pre></div>
 					<p>So, running <code>echo 1 &gt; /dev/hddled2</code>
 						will turn LED 2 green. The module does not handle any detection of drives installed. This will have to be handled by a user space program that will write in appropriate hddled char devices.</p>
-					<h4>Packaging for NixOS</h4>
+					<h4 id="packaging-for-nixos">Packaging for NixOS</h4>
 					<p>I'm not gonna go too deep into packaging for Nix but I will show a working derivation below. I recommend reading <a href="https://nixos.org/nixos/nix-pills/why-you-should-give-it-a-try.html">Nix pills</a>
 						if you're interested in learning Nix.</p>
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ stdenv, fetchFromGitHub, kernel }:
@@ -197,7 +197,7 @@ stdenv<span style="color: #8EC07C">.</span>mkDerivation <span style="color: #CC2
   <span style="color: #8EC07C">...</span>
 }
 </code></pre></div>
-					<h3>Plex Media Server</h3>
+					<h3 id="plex-media-server">Plex Media Server</h3>
 					<p>To install Plex Media Server you must include the following in your <code>/etc/nixos/configuration.nix</code>.</p>
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #928374; font-style: italic"># Plex has an unfree license</span>
 nixpkgs<span style="color: #8EC07C">.</span>config<span style="color: #8EC07C">.</span><span style="color: #D3869B">allowUnfree</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
@@ -211,7 +211,7 @@ services<span style="color: #8EC07C">.</span>plex<span style="color: #8EC07C">.<
 service<span style="color: #8EC07C">.</span>ples<span style="color: #8EC07C">.</span><span style="color: #D3869B">openFirewall</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
 </code></pre></div>
 					<p>After getting a Plex Pass subscription and turning on hardware transcoding for this server I can transcode videos with fairly low CPU utilization.</p>
-					<h2>Conclusion</h2>
+					<h2 id="conclusion">Conclusion</h2>
 					<p>I've really enjoyed having this setup. After setting it up initially I've barely had to touch it and I can run automatic updates and trust that they won't mess up the system completely (I can always rollback the whole system). Since this experiment went so well I've also started using NixOS on my workstation and <a href="https://github.com/LnL7/nix-darwin">nix-darwin</a>
 						on my work macbook.</p>
 					<p>My only regret is not buying a bigger one, like the <a href="https://www.terra-master.com/global/products/homesoho-nas/f4-221.html">F4-221</a>. Looking at the thick border on the right side of the drive bays suggests to me that this unit might be identical to the 5-bay one except with one drive bay blocked off, which would be a perfect place for an SSD to boot from. Some pictures in a <a href="https://nascompares.com/terramaster-f4-220-nas-review/">review</a>
