@@ -568,7 +568,7 @@ in
     };
   };
 
-  website.content.mdProcessor = {
+  website.content.processors.md = {
     settings.highlight.style = "gruvbox-dark-medium";
     extraPythonPackages = [
       # Add pygments-styles: https://pygments-styles.org/
