@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="content-type" content="text/html" charset="UTF-8">
+		<meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			nixidy part 3: Reusable templates for recurring application patterns | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="nixidy part 3: Reusable templates for recurring application patterns | codedbearder">
+		<meta property="twitter:title" content="nixidy part 3: Reusable templates for recurring application patterns | codedbearder">
+		<meta itemprop="name" content="nixidy part 3: Reusable templates for recurring application patterns | codedbearder">
+		<meta name="application-name" content="nixidy part 3: Reusable templates for recurring application patterns | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						nixidy part 3: Reusable templates for recurring application patterns
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Jun 8, 2026
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/nixidy">
+							#nixidy
+						</a>
+						<a class="no-underline" href="/tags/nix">
+							#nix
+						</a>
+						<a class="no-underline" href="/tags/kubernetes">
+							#kubernetes
+						</a>
+						<a class="no-underline" href="/tags/gitops">
+							#gitops
+						</a>
+						<a class="no-underline" href="/tags/argocd">
+							#argocd
+						</a>
+						<a class="no-underline" href="/tags/tutorial">
+							#tutorial
+						</a>
+					</div>
+
+					<p>The third time I write a Deployment + Service + Ingress trio I start to notice the shape: selector labels that match the pod template labels, a service port that mirrors the container port, an ingress that references the service by name. Every field is wired to every other field, and a typo in one label breaks the chain silently. By the fifth web application I'm copying an existing module and changing five values and hoping I changed all five.</p>
+					<p>nixidy's template system captures that pattern once, with typed options for the variables and an <code>output</code>
+						function that generates the resources. I can instantiate it with different <code>image</code>, <code>port</code>, and <code>replicas</code>
+						values and get a complete application each time. No duplication, no missed wiring.</p>
+					<!--more-->
+
+					<p>By the end of this part we'll have a <code>webApp</code>
+						template that generates a Deployment, Service, and optional Ingress from four typed options, and we'll use it to deploy two applications (a frontend and an API) with different configurations.</p>
+					<h2 id="what-youll-build">What you'll build</h2>
+					<p>We're going to build a <code>webApp</code>
+						template defined in <code>modules/templates.nix</code>, imported globally via <code>flake.nix</code>'s shared <code>modules</code>
+						list. Two applications (<code>frontend</code>
+						and <code>api</code>) instantiated from the template with different images, ports, and replica counts.</p>
+					<h2 id="prerequisites">Prerequisites</h2>
+					<ul>
+						<li><a href="/posts/nixidy-part-1-introduction/">Parts 1</a>
+						and <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>
+						complete: you have a multi-environment project with shared modules</li>
+						<li>The same toolchain: <strong>Nix</strong>
+							and <strong>nixidy</strong></li>
+					</ul>
+					<h2 id="a-template-with-typed-options">A template with typed options</h2>
+					<p>A template has two parts: <code>options</code>
+						and <code>output</code>. The <code>options</code>
+						block declares what each instance can configure, using the same <code>lib.mkOption</code>
+						I'd use in a NixOS module. The <code>output</code>
+						block is a function that receives the instance's <code>name</code>
+						and resolved <code>config</code>, and returns a set of nixidy resources.</p>
+					<p>Let's create <code>modules/templates.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  templates<span style="color: #8EC07C">.</span><span style="color: #D3869B">webApp</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">options</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
+        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>types<span style="color: #8EC07C">.</span>str;
+        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Container image to deploy&quot;</span>;
+      };
+
+      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
+        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>types<span style="color: #8EC07C">.</span>int;
+        <span style="color: #D3869B">default</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">2</span>;
+        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Number of pod replicas&quot;</span>;
+      };
+
+      <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
+        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>types<span style="color: #8EC07C">.</span>port;
+        <span style="color: #D3869B">default</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">8080</span>;
+        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Application port (container, service, and ingress)&quot;</span>;
+      };
+
+      <span style="color: #D3869B">ingressHost</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
+        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> <span style="color: #CC241D">with</span> lib<span style="color: #8EC07C">.</span>types; nullOr str;
+        <span style="color: #D3869B">default</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">null</span>;
+        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Ingress hostname. Set to null (the default) to skip Ingress creation.&quot;</span>;
+      };
+    };
+
+    <span style="color: #D3869B">output</span> <span style="color: #8EC07C">=</span> { name, config, <span style="color: #8EC07C">...</span> }: <span style="color: #CC241D">let</span>
+      <span style="color: #D3869B">labels</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #B8BB26">&quot;app.kubernetes.io/name&quot;</span> <span style="color: #8EC07C">=</span> name;
+        <span style="color: #B8BB26">&quot;app.kubernetes.io/instance&quot;</span> <span style="color: #8EC07C">=</span> name;
+      };
+    <span style="color: #CC241D">in</span> {
+      deployments<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>replicas;
+        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">matchLabels</span> <span style="color: #8EC07C">=</span> labels;
+        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
+          metadata<span style="color: #8EC07C">.</span><span style="color: #D3869B">labels</span> <span style="color: #8EC07C">=</span> labels;
+          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span> <span style="color: #8EC07C">=</span> {
+            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>image;
+            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
+          };
+        };
+      };
+
+      services<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #D3869B">selector</span> <span style="color: #8EC07C">=</span> labels;
+        ports<span style="color: #8EC07C">.</span><span style="color: #D3869B">http</span> <span style="color: #8EC07C">=</span> {
+          <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
+          <span style="color: #D3869B">targetPort</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
+        };
+      };
+
+      <span style="color: #D3869B">ingresses</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkIf (config<span style="color: #8EC07C">.</span>ingressHost <span style="color: #8EC07C">!=</span> <span style="color: #83A598">null</span>) {
+        <span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span><span style="color: #D3869B">rules</span> <span style="color: #8EC07C">=</span> [{
+          <span style="color: #D3869B">host</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>ingressHost;
+          http<span style="color: #8EC07C">.</span><span style="color: #D3869B">paths</span> <span style="color: #8EC07C">=</span> [{
+            <span style="color: #D3869B">path</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;/&quot;</span>;
+            <span style="color: #D3869B">pathType</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Prefix&quot;</span>;
+            backend<span style="color: #8EC07C">.</span><span style="color: #D3869B">service</span> <span style="color: #8EC07C">=</span> {
+              <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> name;
+              port<span style="color: #8EC07C">.</span><span style="color: #D3869B">number</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
+            };
+          }];
+        }];
+      };
+    };
+  };
+}
+</code></pre></div>
+					<p>Let me walk through the structure:</p>
+					<ul>
+						<li><strong><code>templates.webApp</code></strong>: The name <code>webApp</code>
+						is what you reference later. It's an arbitrary identifier, pick something that describes the pattern.</li>
+						<li><strong><code>options</code></strong>: Four typed options. <code>image</code>
+						has no default, so every instance <em>must</em>
+						set it and omitting it is a build error. <code>replicas</code>, <code>port</code>, and <code>ingressHost</code>
+						have defaults, so instances only set them when they need to override.</li>
+						<li><strong><code>output</code></strong>: A function receiving <code>{ name, config, ... }</code>. <code>name</code>
+						is the instance identifier (you'll see how that works in a moment). <code>config</code>
+						holds the resolved option values for this specific instance. The function returns an attribute set of resources in the same shape as <code>applications.&lt;name&gt;.resources</code>, but relative to the application that uses the template.</li>
+						<li><strong><code>lib.mkIf</code></strong>: Conditionally includes the <code>ingresses</code>
+						block only when <code>ingressHost</code>
+						is not null. This is the standard NixOS module system conditional and the ingress simply doesn't exist when the host is null.</li>
+					</ul>
+					<div class="admonition tip">
+						<p class="admonition-title">Templates vs. shared modules</p>
+						<p>A shared module (like <code>modules/nginx.nix</code>
+							from <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>) defines <em>one</em>
+							application's resources and lets environments override specific fields. A template defines a <em>pattern</em>
+							(Deployment + Service + Ingress) and lets you instantiate it N times with different parameters. If you have one nginx, use a shared module. If you have five web applications that all follow the same Deployment-Service-Ingress shape, use a template.</p>
+					</div>
+					<h2 id="using-the-template-in-an-application">Using the template in an application</h2>
+					<p>Now let's add <code>modules/templates.nix</code>
+						to the shared <code>modules</code>
+						list in <code>flake.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
+        <span style="color: #CC241D">inherit</span> pkgs;
+        <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
+          <span style="color: #B8BB26">./modules/templates.nix</span>
+          <span style="color: #B8BB26">./modules/nginx.nix</span>
+          <span style="color: #B8BB26">./modules/traefik.nix</span>
+        ];
+        <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
+          dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
+          staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
+          prod<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/prod.nix</span> ];
+        };
+      };
+</code></pre></div>
+					<p>Now let's create a new application module that uses the template. Create <code>modules/webapps.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+    templates<span style="color: #8EC07C">.</span>webApp<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend:v1.2.3&quot;</span>;
+      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3</span>;
+      <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3000</span>;
+      <span style="color: #D3869B">ingressHost</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;app.example.com&quot;</span>;
+    };
+  };
+
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">api</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;api&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+    templates<span style="color: #8EC07C">.</span>webApp<span style="color: #8EC07C">.</span><span style="color: #D3869B">api</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;api:v2.0.1&quot;</span>;
+      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkDefault <span style="color: #D3869B">2</span>;
+      <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">8080</span>;
+    };
+  };
+}
+</code></pre></div>
+					<p>The template instantiation syntax is <code>templates.&lt;templateName&gt;.&lt;instanceName&gt;</code>. Here's what each part means:</p>
+					<ul>
+						<li><code>templates.webApp.frontend</code>: Use the <code>webApp</code>
+						template, create an instance called <code>frontend</code>. The <code>name</code>
+						argument in the <code>output</code>
+						function receives <code>"frontend"</code>.</li>
+						<li><code>{ image = "frontend:v1.2.3"; replicas = 3; port = 3000; ingressHost = "app.example.com"; }</code>: Set the options. <code>image</code>
+						is required (no default), so omitting it would be a build error. <code>port</code>
+						overrides the default of <code>8080</code>
+						to <code>3000</code>. <code>ingressHost</code>
+						triggers the <code>lib.mkIf</code>
+						and generates an Ingress resource.</li>
+					</ul>
+					<p>For the <code>api</code>
+						instance, <code>ingressHost</code>
+						is left at its default (<code>null</code>), so no Ingress is generated and the API is cluster-internal. <code>replicas = lib.mkDefault 2</code>
+						means environments can override it with a plain assignment (priority <code>100</code>
+						beats the default <code>1000</code>), same composition mechanism from <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>.</p>
+					<p>Let's add <code>modules/webapps.nix</code>
+						to the shared modules in <code>flake.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
+  <span style="color: #B8BB26">./modules/templates.nix</span>
+  <span style="color: #B8BB26">./modules/webapps.nix</span>
+  <span style="color: #B8BB26">./modules/nginx.nix</span>
+  <span style="color: #B8BB26">./modules/traefik.nix</span>
+];
+</code></pre></div>
+					<h2 id="patching-template-generated-resources">Patching template-generated resources</h2>
+					<p>Template output is regular nixidy resources and I can override individual fields the same way I'd override a shared module. If the frontend needs a memory limit that the template doesn't expose as an option:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
+  <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend&quot;</span>;
+  <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+  templates<span style="color: #8EC07C">.</span>webApp<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend:v1.2.3&quot;</span>;
+    <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3</span>;
+    <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3000</span>;
+    <span style="color: #D3869B">ingressHost</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;app.example.com&quot;</span>;
+  };
+
+  resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>frontend<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span>frontend<span style="color: #8EC07C">.</span><span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
+    requests<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;64Mi&quot;</span>;
+    limits<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;128Mi&quot;</span>;
+  };
+};
+</code></pre></div>
+					<p>The template generates the Deployment. The <code>resources.deployments.frontend</code>
+						block merges with the generated output and adds resource limits without touching the template.</p>
+					<h2 id="whats-next">What's next</h2>
+					<p>Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In <a href="/posts/nixidy-part-4-typed-resource-options/">part 4</a>
+						I'll cover how to generate typed resource options from CRDs (both plain YAML files and a Helm chart), so that we can define and override <code>CiliumNetworkPolicies</code>, cert-manager's <code>Certificates</code>
+						or prometheus <code>ServiceMonitors</code>
+						in <code>applications.&lt;name&gt;.resources</code>.</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="pt-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+				<div class="py-8 text-sm">
+					This website is generated with
+					<a class="underline" href="https://github.com/arnarg/nixtml">
+						nixtml
+					</a>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

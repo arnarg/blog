@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="content-type" content="text/html" charset="UTF-8">
+		<meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			nixidy part 2: Multi-environments and Helm charts | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="nixidy part 2: Multi-environments and Helm charts | codedbearder">
+		<meta property="twitter:title" content="nixidy part 2: Multi-environments and Helm charts | codedbearder">
+		<meta itemprop="name" content="nixidy part 2: Multi-environments and Helm charts | codedbearder">
+		<meta name="application-name" content="nixidy part 2: Multi-environments and Helm charts | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						nixidy part 2: Multi-environments and Helm charts
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Jun 8, 2026
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/nixidy">
+							#nixidy
+						</a>
+						<a class="no-underline" href="/tags/nix">
+							#nix
+						</a>
+						<a class="no-underline" href="/tags/kubernetes">
+							#kubernetes
+						</a>
+						<a class="no-underline" href="/tags/gitops">
+							#gitops
+						</a>
+						<a class="no-underline" href="/tags/argocd">
+							#argocd
+						</a>
+						<a class="no-underline" href="/tags/tutorial">
+							#tutorial
+						</a>
+					</div>
+
+					<p>In <a href="/posts/nixidy-part-1-introduction/">the previous part</a>
+						we created a single nixidy application. The nginx <code>Deployment</code>
+						in <code>dev.nix</code>
+						is 20 lines. When I add <code>staging.nix</code>
+						and <code>prod.nix</code>
+						I'll have three copies of those 20 lines, and they'll be identical except for <code>replicas</code>
+						and maybe an annotation or two. Change the container port in one, forget it in another, and I've got a silent divergence that no CI check will catch.</p>
+					<p>The NixOS module system solves this the same way it solves duplicate NixOS host configs: shared base modules, <code>imports</code>, and priority primitives that let me express "same app, different scale" in two lines instead of a full file copy. This part covers that composition, then adds a Helm chart to the mix (because most real clusters run at least one piece of software that only ships as a Helm chart).</p>
+					<!--more-->
+
+					<p>By the end of this part we'll have three environments (dev, staging, prod) sharing a single nginx definition with per-environment overrides, plus a Traefik ingress controller pulled from a Helm chart and patched with nixidy's typed resources.</p>
+					<h2 id="what-youll-build">What you'll build</h2>
+					<p>We're going to build a project with a shared <code>modules/nginx.nix</code>
+						imported by <code>env/dev.nix</code>, <code>env/staging.nix</code>, and <code>env/prod.nix</code>, each overriding <code>replicas</code>
+						via <code>lib.mkDefault</code>
+						and <code>lib.mkForce</code>. We'll also add a second application, Traefik, rendered from an upstream Helm chart with nixidy-managed patches.</p>
+					<h2 id="prerequisites">Prerequisites</h2>
+					<ul>
+						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>
+						complete: you have a working nixidy project with <code>env/dev.nix</code></li>
+						<li>The same toolchain: <strong>Nix</strong>
+							and <strong>nixidy</strong></li>
+					</ul>
+					<h2 id="refactor-the-nginx-application-into-a-shared-module">Refactor the nginx application into a shared module</h2>
+					<p>The nginx definition currently lives inline in <code>env/dev.nix</code>. Let's pull it out into its own module so every environment can import it. Create <code>modules/nginx.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+    <span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
+      deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkDefault <span style="color: #D3869B">2</span>;
+        selector<span style="color: #8EC07C">.</span>matchLabels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
+          metadata<span style="color: #8EC07C">.</span>labels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx:1.25.1&quot;</span>;
+            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
+          };
+        };
+      };
+
+      services<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+        ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
+      };
+    };
+  };
+}
+</code></pre></div>
+					<p>One change from <a href="/posts/nixidy-part-1-introduction/">Part 1</a>: <code>replicas = 2</code>
+						became <code>replicas = lib.mkDefault 2</code>. This sets the default priority, so any module that imports this one can override it with a plain assignment or with <code>lib.mkForce</code>.</p>
+					<div class="admonition tip">
+						<p class="admonition-title">tip</p>
+						<p>The NixOS module system has three priority tiers you'll use constantly: <code>lib.mkDefault</code>
+							(<code>1000</code>, which is easily overridden), a plain value (<code>100</code>, which is the normal priority), and <code>lib.mkForce</code>
+							(<code>50</code>, which wins against everything). Two modules setting the same option at the same priority is an error and the system forces you to be explicit about which one wins.</p>
+					</div>
+					<p>Now I need to update <code>flake.nix</code>
+						to pull in the shared module via <code>mkEnvs</code>'s <code>modules</code>
+						list:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;My Kubernetes cluster managed with nixidy&quot;</span>;
+
+  <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
+    nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
+    flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
+    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy&quot;</span>;
+  };
+
+  <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
+    nixpkgs,
+    flake-utils,
+    nixidy,
+    <span style="color: #8EC07C">...</span>
+  }:
+    flake-utils<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>eachDefaultSystem (system: <span style="color: #CC241D">let</span>
+      <span style="color: #D3869B">pkgs</span> <span style="color: #8EC07C">=</span> <span style="color: #FE8019">import</span> nixpkgs {<span style="color: #CC241D">inherit</span> system;};
+    <span style="color: #CC241D">in</span> {
+      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
+        <span style="color: #CC241D">inherit</span> pkgs;
+        <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./modules/nginx.nix</span> ];
+        envs<span style="color: #8EC07C">.</span>dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
+      };
+    });
+}
+</code></pre></div>
+					<p>The <code>modules</code>
+						list at the top level of <code>mkEnvs</code>
+						is a shared import and every environment gets these modules automatically. This is equivalent to adding them to each environment's <code>imports</code>
+						list by hand. As the project grows, adding a new shared module here is one line instead of N lines across N environment files.</p>
+					<p>Then I can rewrite <code>env/dev.nix</code>
+						(no import needed, since <code>flake.nix</code>
+						already handles it):</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/dev&quot;</span>;
+}
+</code></pre></div>
+					<p>Let's build the dev environment:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+tree<span style="color: #EBDBB2"> </span>result
+</code></pre></div>
+					<p>The output is identical to <a href="/posts/nixidy-part-1-introduction/">Part 1</a>
+						(four files, same content). The module system merged the shared definition with the (empty) dev-specific overrides and produced the same result.</p>
+					<h2 id="a-staging-environment-with-a-different-replica-count">A staging environment with a different replica count</h2>
+					<p>Now let's add a second environment. The shared modules list in <code>flake.nix</code>
+						already covers nginx, so <code>env/staging.nix</code>
+						only needs environment-specific config:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
+  <span style="color: #CC241D">inherit</span> pkgs;
+  <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./modules/nginx.nix</span> ];
+  <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
+    dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
+    staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
+  };
+};
+</code></pre></div>
+					<p>Let's create <code>env/staging.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/staging&quot;</span>;
+
+  applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span><span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3</span>;
+}
+</code></pre></div>
+					<p>The plain assignment <code>replicas = 3</code>
+						has priority <code>100</code>, which beats <code>mkDefault</code>'s <code>1000</code>. Staging gets 3 replicas and a single line expresses that.</p>
+					<p>Let's build it:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#staging
+cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>grep<span style="color: #EBDBB2"> </span>replicas
+</code></pre></div>
+					<p>You should see <code>replicas: 3</code>.</p>
+					<h2 id="a-production-environment-with-forced-overrides">A production environment with forced overrides</h2>
+					<p>Now let's create <code>env/prod.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/prod&quot;</span>;
+
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+    resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkForce <span style="color: #D3869B">10</span>;
+      template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
+        requests<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;128Mi&quot;</span>;
+        limits<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;256Mi&quot;</span>;
+      };
+    };
+
+    syncPolicy<span style="color: #8EC07C">.</span><span style="color: #D3869B">autoSync</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">enable</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+      <span style="color: #D3869B">prune</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+      <span style="color: #D3869B">selfHeal</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+    };
+  };
+}
+</code></pre></div>
+					<p>There are two things happening here:</p>
+					<ul>
+						<li><code>lib.mkForce 10</code>
+						sets replicas at priority <code>50</code>. This wins against any accidental override from another imported module. In production, that guarantee matters as a stray <code>mkDefault</code>
+						from a shared module won't silently scale you down.</li>
+						<li><code>syncPolicy.autoSync</code>
+						configures the generated Argo CD <code>Application</code>
+						to automatically sync changes, prune deleted resources, and self-heal when the cluster drifts from the desired state. This is an Argo CD feature nixidy exposes as a typed option. You set it in Nix, not in the Argo CD UI.</li>
+					</ul>
+					<div class="admonition tip">
+						<p class="admonition-title"><code>lib.mkForce</code>
+						as a safety rail</p>
+						<p>In a large project with many shared modules, it's easy for two modules to set the same option at the same priority. The module system catches this at build time and two plain values for <code>replicas</code>
+							is a conflict error, not a silent override. <code>mkForce</code>
+							enforces the value. Use it sparingly (production replicas, resource limits, security contexts). Overusing it defeats the composition model because every <code>mkForce</code>
+							is a value that can't be overridden elsewhere.</p>
+					</div>
+					<p>Let's update <code>flake.nix</code>
+						once more to include all three environments. I'll add the Traefik module to the shared list at the same time:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
+  <span style="color: #CC241D">inherit</span> pkgs;
+  <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
+    <span style="color: #B8BB26">./modules/nginx.nix</span>
+    <span style="color: #B8BB26">./modules/traefik.nix</span>
+  ];
+  <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
+    dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
+    staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
+    prod<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/prod.nix</span> ];
+  };
+};
+</code></pre></div>
+					<h2 id="a-helm-chart-integrated-as-a-nixidy-application">A Helm chart integrated as a nixidy application</h2>
+					<p>Most Kubernetes software ships as Helm charts and refusing to use them means maintaining hundreds of lines of Kubernetes resources by hand. nixidy can render Helm charts at build time and make the output available as typed resources that can be patched.</p>
+					<p>Let's add Traefik as a second application. Create <code>modules/traefik.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">traefik</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;traefik&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+    helm<span style="color: #8EC07C">.</span>releases<span style="color: #8EC07C">.</span><span style="color: #D3869B">traefik</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>helm<span style="color: #8EC07C">.</span>downloadHelmChart {
+        <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://traefik.github.io/charts/&quot;</span>;
+        <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;traefik&quot;</span>;
+        <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;25.0.0&quot;</span>;
+        <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-ua8KnUB6MxY7APqrrzaKKSOLwSjDYkk9tfVkb1bqkVM=&quot;</span>;
+      };
+
+      <span style="color: #D3869B">values</span> <span style="color: #8EC07C">=</span> {
+        ingressClass<span style="color: #8EC07C">.</span><span style="color: #D3869B">enabled</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+      };
+    };
+
+    resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>traefik<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span>traefik<span style="color: #8EC07C">.</span><span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span>
+      lib<span style="color: #8EC07C">.</span>mkForce <span style="color: #B8BB26">&quot;traefik:v3.0.0&quot;</span>;
+  };
+}
+</code></pre></div>
+					<p>Let me walk through the new pieces:</p>
+					<ul>
+						<li><strong><code>helm.releases.traefik</code></strong>: Declares a Helm release. nixidy runs <code>helm template</code>
+						at build time, captures the rendered manifests, and makes them available as typed resources.</li>
+						<li><strong><code>lib.helm.downloadHelmChart</code></strong>: Fetches the chart into the Nix store. The <code>chartHash</code>
+						pins the exact chart artifact. Change the version without updating the hash and the build fails, same reproducibility guarantee as <code>fetchFromGitHub</code>.</li>
+						<li><strong><code>values</code></strong>: Standard Helm values, but expressed as a Nix attribute set.</li>
+						<li><strong><code>resources.deployments.traefik...</code></strong>: Patches a field <em>after</em>
+						Helm rendering. The Helm chart produces the Traefik Deployment, nixidy parses it into typed resources, and you override the container image with <code>lib.mkForce</code>.</li>
+					</ul>
+					<div class="admonition warning">
+						<p class="admonition-title">warning</p>
+						<p>The <code>chartHash</code>
+							is critical. It's the SHA-256 of the <code>.tgz</code>
+							archive. If you change <code>version</code>
+							to <code>"25.0.1"</code>
+							without updating the hash, the build fails with a hash mismatch. To get the correct hash, set it to <code>lib.fakeHash</code>
+							or an empty string (<code>"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="</code>), run the build, and copy the <em>expected</em>
+							hash from the error message. This is the poor man's Nix workflow for pinned fetches.</p>
+					</div>
+					<p>The shared <code>modules</code>
+						list in <code>flake.nix</code>
+						already covers nginx and Traefik, so <code>env/dev.nix</code>
+						stays minimal:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/dev&quot;</span>;
+}
+</code></pre></div>
+					<p>Every environment file is now just target configuration and environment-specific overrides. Adding a new shared module means one line in <code>flake.nix</code>
+						and not one line in every environment file.</p>
+					<h2 id="the-project-structure-so-far">The project structure so far</h2>
+					<p>After these changes the project looks like this:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>my-cluster/
+├── flake.nix
+├── flake.lock
+├── modules/
+│   ├── nginx.nix          # shared nginx definition
+│   └── traefik.nix        # traefik from Helm chart
+├── env/
+│   ├── dev.nix            # target config + overrides (modules via flake.nix)
+│   ├── staging.nix        # target config + overrides
+│   └── prod.nix           # target config + overrides + autosync
+└── manifests/             # generated output
+    ├── dev/
+    ├── staging/
+    └── prod/
+</code></pre></div>
+					<p>Each environment file contains only target configuration and environment-specific overrides. The shared application modules live in <code>flake.nix</code>'s <code>modules</code>
+						list, which feeds them into every environment automatically. Adding a fourth environment is just creating one new file with target config and overrides.</p>
+					<h2 id="whats-next">What's next</h2>
+					<p>Now we have three environments with a nixidy defined application and a Helm chart. But the nginx application is still defined from scratch while real clusters have recurring patterns: a web app that always gets a Deployment, a Service, and an Ingress with the same shape. <a href="/posts/nixidy-part-3-reusable-templates/">Part 3</a>
+						covers nixidy's template system, which lets us define that pattern once with typed options and instantiate it across applications with different images, ports, and replica counts.</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="pt-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+				<div class="py-8 text-sm">
+					This website is generated with
+					<a class="underline" href="https://github.com/arnarg/nixtml">
+						nixtml
+					</a>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="content-type" content="text/html" charset="UTF-8">
+		<meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			nixidy part 6: CI integration and the promotion workflow | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="nixidy part 6: CI integration and the promotion workflow | codedbearder">
+		<meta property="twitter:title" content="nixidy part 6: CI integration and the promotion workflow | codedbearder">
+		<meta itemprop="name" content="nixidy part 6: CI integration and the promotion workflow | codedbearder">
+		<meta name="application-name" content="nixidy part 6: CI integration and the promotion workflow | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						nixidy part 6: CI integration and the promotion workflow
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Jun 8, 2026
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/nixidy">
+							#nixidy
+						</a>
+						<a class="no-underline" href="/tags/nix">
+							#nix
+						</a>
+						<a class="no-underline" href="/tags/kubernetes">
+							#kubernetes
+						</a>
+						<a class="no-underline" href="/tags/gitops">
+							#gitops
+						</a>
+						<a class="no-underline" href="/tags/argocd">
+							#argocd
+						</a>
+						<a class="no-underline" href="/tags/tutorial">
+							#tutorial
+						</a>
+					</div>
+
+					<p>Every change we've made so far has been local: edit a Nix file, run <code>nixidy build</code>, inspect <code>result/</code>, run <code>nixidy switch</code>
+						to copy manifests into the repo, commit, push. That workflow works for one person. It breaks the moment a second person needs to review what's being deployed, because they see a Nix diff, not a YAML diff, and they have to trust that <code>nixidy build</code>
+						produces what they expect.</p>
+					<p>The rendered manifests pattern exists to solve this. CI builds the YAML from the Nix files and commits it to a known location in the repository (a promotion branch, a subdirectory on main, or a separate repository entirely). The reviewer sees a plain <code>git diff</code>
+						of Kubernetes YAML. Argo CD picks up the change and deploys it. The Nix files are the source of truth; the YAML is the review artifact.</p>
+					<!--more-->
+
+					<p>By the end of this part we'll have a GitHub Actions workflow that builds the <code>dev</code>
+						environment on every push to <code>main</code>, opens a pull request with the rendered manifests, and lets the team review the exact YAML that will reach the cluster before merging.</p>
+					<h2 id="what-youll-build">What you'll build</h2>
+					<p>We're going to build a single GitHub Actions workflow file that runs <code>nixidy build</code>
+						on push, copies the output into <code>manifests/dev/</code>, and opens a promotion PR. Plus a local <code>nixidy diff</code>
+						workflow for comparing environments before pushing.</p>
+					<h2 id="prerequisites">Prerequisites</h2>
+					<ul>
+						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>, <a href="/posts/nixidy-part-3-reusable-templates/">3</a>, <a href="/posts/nixidy-part-4-typed-resource-options/">4</a>
+						and <a href="/posts/nixidy-part-5-assertions-and-warnings/">5</a>
+						complete</li>
+						<li>The same toolchain: <strong>Nix</strong>
+							and <strong>nixidy</strong></li>
+					</ul>
+					<h2 id="the-promotion-workflow">The promotion workflow</h2>
+					<p>The core idea: Nix files change on <code>main</code>, CI renders them to YAML, and the YAML lands in a PR that a human reviews before it reaches Argo CD. This is the <a href="https://akuity.io/blog/the-rendered-manifests-pattern/">rendered manifests pattern</a>
+						that nixidy is built around. CI is the bridge between "Nix changed" and "YAML is ready to deploy."</p>
+					<p>Let's create <code>.github/workflows/promote-dev.yaml</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Promote to dev</span>
+
+<span style="color: #8EC07C; font-weight: bold">on</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">push</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">branches</span>:
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">main</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">paths-ignore</span>:
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">manifests/**</span>
+
+<span style="color: #8EC07C; font-weight: bold">jobs</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">promote</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">runs-on</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">ubuntu-latest</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">steps</span>:
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">actions/checkout@v4</span>
+
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">cachix/install-nix-action@v31</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">extra_nix_config</span>:<span style="color: #EBDBB2"> </span>|
+<span style="color: #EBDBB2">            </span><span style="color: #83A598">extra-experimental-features = nix-command flakes</span>
+
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">arnarg/nixidy/actions/build@main</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">id</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">build</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">environment</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">.#dev</span>
+
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">shell</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">bash</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">run</span>:<span style="color: #EBDBB2"> </span>|
+<span style="color: #EBDBB2">          </span><span style="color: #83A598">rsync --recursive --delete &#39;${{ steps.build.outputs.out-path }}/&#39; manifests/dev</span>
+
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">EndBug/add-and-commit@v9</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">id</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">commit</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">default_author</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">github_actions</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">message</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;chore:</span><span style="color: #83A598"> </span><span style="color: #B8BB26">promote</span><span style="color: #83A598"> </span><span style="color: #B8BB26">to</span><span style="color: #83A598"> </span><span style="color: #B8BB26">dev</span><span style="color: #83A598"> </span><span style="color: #B8BB26">${{</span><span style="color: #83A598"> </span><span style="color: #B8BB26">github.sha</span><span style="color: #83A598"> </span><span style="color: #B8BB26">}}&quot;</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">fetch</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">false</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">new_branch</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">promote/env/dev</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">push</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">--set-upstream origin promote/env/dev --force</span>
+
+<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">thomaseizinger/create-pull-request@1.4.0</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">if</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">${{ steps.commit.outputs.pushed == &#39;true&#39; }}</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">github_token</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">${{ github.token }}</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">head</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">promote/env/dev</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">base</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">main</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">title</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;chore:</span><span style="color: #83A598"> </span><span style="color: #B8BB26">promote</span><span style="color: #83A598"> </span><span style="color: #B8BB26">to</span><span style="color: #83A598"> </span><span style="color: #B8BB26">dev</span><span style="color: #83A598"> </span><span style="color: #B8BB26">${{</span><span style="color: #83A598"> </span><span style="color: #B8BB26">github.sha</span><span style="color: #83A598"> </span><span style="color: #B8BB26">}}&quot;</span>
+</code></pre></div>
+					<p>Let me walk through each step:</p>
+					<ul>
+						<li><strong><code>paths-ignore: manifests/**</code></strong>: prevents infinite loops. When the promotion PR merges and the rendered manifests land on <code>main</code>, this workflow <em>doesn't</em>
+						trigger again. Only changes to Nix files (or anything outside <code>manifests/</code>) trigger a build.</li>
+						<li><strong><code>arnarg/nixidy/actions/build</code></strong>: nixidy's <a href="https://nixidy.dev/user_guide/github_actions/">official GitHub Action</a>. Runs <code>nixidy build .#dev</code>
+						and exposes the output path as <code>steps.build.outputs.out-path</code>. Unlike running <code>nixidy build</code>
+						directly, this action doesn't create a <code>result</code>
+						symlink, it returns the Nix store path.</li>
+						<li><strong><code>rsync --recursive --delete</code></strong>: copies the built manifests into <code>manifests/dev/</code>, mirroring the directory structure. The <code>--delete</code>
+						flag removes stale files, so if a resource was removed from the Nix config it disappears from the output too.</li>
+						<li><strong><code>EndBug/add-and-commit</code></strong>: commits the manifests to <code>promote/env/dev</code>
+						(an orphan branch, not <code>main</code>). The <code>--force</code>
+						push keeps the branch clean, each promotion overwrites the previous one.</li>
+						<li><strong><code>thomaseizinger/create-pull-request</code></strong>: opens a PR from <code>promote/env/dev</code>
+						into <code>main</code>. The PR diff is exactly the rendered YAML changes. Reviewers see <code>Deployment-nginx.yaml</code>
+						with <code>replicas: 3</code>
+						changed to <code>replicas: 5</code>, not the Nix expression that produced it.</li>
+					</ul>
+					<div class="admonition warning">
+						<p class="admonition-title">warning</p>
+						<p>The <code>arnarg/nixidy/actions/build</code>
+							action requires flakes support even if the project doesn't use flakes, because the action internally uses <code>nix run</code>
+							to invoke the nixidy CLI. That's why <code>extra-experimental-features = nix-command flakes</code>
+							is necessary in the <code>install-nix-action</code>
+							config.</p>
+					</div>
+					<h3 id="the-switch-action">The switch action</h3>
+					<p>The <code>build</code>
+						action produces the output path but doesn't write to disk. You can use the <code>switch</code>
+						action instead which will automatically <code>rsync</code>
+						the manifests to the configured <code>nixidy.target.rootPath</code>, as a result it's really only useful if your manifests live on the same branch as the nixidy modules and flake.nix.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">arnarg/nixidy/actions/switch@main</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">with</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">environment</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">.#dev</span>
+</code></pre></div>
+					<h2 id="which-git-strategy-for-which-environment">Which Git strategy for which environment?</h2>
+					<p>The <a href="https://nixidy.dev/user_guide/git_strategies/">Git Strategies docs</a>
+						describe three patterns:</p>
+					<ul>
+						<li><strong>Monorepo</strong>: everything on <code>main</code>. Rendered manifests go into <code>manifests/&lt;env&gt;/</code>. Fast local iteration (<code>nixidy switch</code>, <code>git diff</code>). Requires <code>CODEOWNERS</code>
+						or branch protection to prevent direct edits to generated YAML.</li>
+						<li><strong>Environment branches</strong>: orphan branches (<code>env/dev</code>, <code>env/staging</code>, <code>env/prod</code>). Each branch holds only rendered manifests. Simpler access control via branch protection.</li>
+						<li><strong>Environment repositories</strong>: separate repos entirely. Strongest isolation, each repo has its own access control and CI pipeline.</li>
+					</ul>
+					<p>The promotion workflow above uses the monorepo strategy with a PR gate. The same <code>build</code>
+						action works for all three, only the commit and PR steps change. Pick the strategy that matches the team's access control needs, not technical preferences.</p>
+					<h2 id="comparing-environments-with-nixidy-diff">Comparing environments with nixidy diff</h2>
+					<p>Before promoting from staging to production it's useful to see what's different. Not the Nix source, the rendered YAML. <code>nixidy diff</code>
+						compares two build outputs:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#staging<span style="color: #EBDBB2"> </span>--env<span style="color: #EBDBB2"> </span>.#prod
+</code></pre></div>
+					<p>This builds both environments and prints the diff of their rendered manifests. The output shows exactly which fields change between staging and production: replicas, resource limits, sync policies, image tags.</p>
+					<p>Compare against the manifests already in your repository:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>--path<span style="color: #EBDBB2"> </span>manifests/dev
+</code></pre></div>
+					<p>This builds <code>.#dev</code>
+						and compares it against the YAML already committed in <code>manifests/dev/</code>. If the output is empty, nothing changed and the local Nix edits don't affect the rendered manifests. If it shows changes, those are the exact diffs that will appear in the promotion PR.</p>
+					<div class="admonition tip">
+						<p class="admonition-title">tip</p>
+						<p><code>nixidy diff</code>
+						is particularly useful before a <code>nixidy switch</code>. Run the diff, review the changes, then switch.</p>
+					</div>
+					<h2 id="conclusion">Conclusion</h2>
+					<p>Six parts in and the tutorial has covered the full lifecycle: defining applications, composing environments, templating patterns, generating typed CRD options, asserting invariants, and promoting through CI. Nix files are the source, assertions guard the build, CI renders to YAML, PRs gate the review, and Argo CD deploys the result.</p>
+					<p>Documentation pages worth exploring:</p>
+					<ul>
+						<li><a href="https://nixidy.dev/user_guide/using_nixhelm/">Using nixhelm</a></li>
+						<li><a href="https://nixidy.dev/user_guide/transformers/">Transformers</a></li>
+						<li><a href="https://nixidy.dev/cli_reference/">CLI reference</a></li>
+						<li><a href="https://nixidy.dev/options/">Configuration options</a></li>
+					</ul>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="pt-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+				<div class="py-8 text-sm">
+					This website is generated with
+					<a class="underline" href="https://github.com/arnarg/nixtml">
+						nixtml
+					</a>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

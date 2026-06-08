@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="content-type" content="text/html" charset="UTF-8">
+		<meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			nixidy part 4: Typed resource options and CRD generation | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="nixidy part 4: Typed resource options and CRD generation | codedbearder">
+		<meta property="twitter:title" content="nixidy part 4: Typed resource options and CRD generation | codedbearder">
+		<meta itemprop="name" content="nixidy part 4: Typed resource options and CRD generation | codedbearder">
+		<meta name="application-name" content="nixidy part 4: Typed resource options and CRD generation | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						nixidy part 4: Typed resource options and CRD generation
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Jun 8, 2026
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/nixidy">
+							#nixidy
+						</a>
+						<a class="no-underline" href="/tags/nix">
+							#nix
+						</a>
+						<a class="no-underline" href="/tags/kubernetes">
+							#kubernetes
+						</a>
+						<a class="no-underline" href="/tags/gitops">
+							#gitops
+						</a>
+						<a class="no-underline" href="/tags/argocd">
+							#argocd
+						</a>
+						<a class="no-underline" href="/tags/tutorial">
+							#tutorial
+						</a>
+					</div>
+
+					<p>Every Kubernetes resource we've defined so far (Deployments, Services, Ingresses, Namespaces, ConfigMaps) has been typed. We didn't install anything extra to make that happen, nixidy ships with typed options for all core Kubernetes resources, generated from the official JSON schemas. When I write <code>replicas = 3</code>, the module system checks that <code>3</code>
+						is an integer. When I write <code>replicas = "three"</code>, the build fails with a type error naming the exact option and the type it expected.</p>
+					<p>That type checking extends beyond built-in resources too. nixidy includes a code generator that produces typed Nix options from any Custom Resource Definition, so my Cilium network policies, cert-manager certificates, and Prometheus service monitors get the same build-time validation as a plain Deployment. This part covers how the built-in types work under the hood, how to generate types from CRDs, and how to handle resources that don't fit the typed model.</p>
+					<!--more-->
+
+					<p>By the end of this part we'll understand the typed resource option system end-to-end: the alias mapping from short names to group/version/kind paths, how to generate typed options from CRDs (both standalone and from Helm charts), and how to include raw YAML for resources that bypass the type system.</p>
+					<h2 id="what-youll-build">What you'll build</h2>
+					<p>We're going to add a Cilium <code>CiliumNetworkPolicy</code>
+						resource with full type safety, generated from Cilium's CRDs using nixidy's <code>fromCRD</code>
+						generator. Plus an understanding of when to use typed resources vs. raw YAML vs. Helm output.</p>
+					<h2 id="prerequisites">Prerequisites</h2>
+					<ul>
+						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>
+						and <a href="/posts/nixidy-part-3-reusable-templates/">3</a>
+						complete</li>
+						<li>The same toolchain: <strong>Nix</strong>
+							and <strong>nixidy</strong></li>
+					</ul>
+					<h2 id="how-typed-resources-work">How typed resources work</h2>
+					<p>Every Kubernetes resource in nixidy lives under <code>applications.&lt;name&gt;.resources</code>. The full path follows the Kubernetes API group, version, and kind:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>resources.core.v1.Service
+resources.apps.v1.Deployment
+resources.&quot;networking.k8s.io&quot;.v1.Ingress
+</code></pre></div>
+					<p>Typing those paths every time is verbose. nixidy provides aliases, which are the plural camelCase form of the kind:</p>
+					<table>
+						<thead>
+							<tr>
+								<th>Full path</th>
+								<th>Alias</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><code>resources.core.v1.Service</code></td>
+								<td><code>resources.services</code></td>
+							</tr>
+							<tr>
+								<td><code>resources.apps.v1.Deployment</code></td>
+								<td><code>resources.deployments</code></td>
+							</tr>
+							<tr>
+								<td><code>resources."networking.k8s.io".v1.Ingress</code></td>
+								<td><code>resources.ingresses</code></td>
+							</tr>
+							<tr>
+								<td><code>resources.core.v1.ConfigMap</code></td>
+								<td><code>resources.configMaps</code></td>
+							</tr>
+							<tr>
+								<td><code>resources.batch.v1.CronJob</code></td>
+								<td><code>resources.cronJobs</code></td>
+							</tr>
+						</tbody>
+					</table>
+					<p>We've been using these aliases throughout <a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>
+						and <a href="/posts/nixidy-part-3-reusable-templates/">3</a>. The aliases resolve to the same typed options, so <code>resources.services.nginx</code>
+						and <code>resources.core.v1.Service.nginx</code>
+						produce identical output.</p>
+					<div class="admonition info">
+						<p class="admonition-title">info</p>
+						<p>The alias is the plural camelCase of the <code>kind</code>
+							field, not the <code>resources</code>
+							field from the Kubernetes API. <code>CronJob</code>
+							becomes <code>cronJobs</code>, <code>NetworkPolicy</code>
+							becomes <code>networkPolicies</code>, <code>ClusterRole</code>
+							becomes <code>clusterRoles</code>. When in doubt, check the <a href="https://nixidy.dev/options/search">nixidy options search</a>.</p>
+					</div>
+					<p>The types themselves are generated from the official Kubernetes JSON schemas with a code generator that was forked from <a href="https://github.com/hall/kubenix/">kubenix</a>. Every field in the schema becomes a Nix option with a type: strings, integers, booleans, attribute sets, lists of submodules. The result is that <code>nixidy build</code>
+						catches the same class of errors a <code>kubectl apply --dry-run</code>
+						would catch, but at Nix evaluation time, which is faster and doesn't require cluster access.</p>
+					<h2 id="what-happens-to-untyped-resources">What happens to untyped resources</h2>
+					<p>Not every resource has typed options. CRDs from third-party operators (Cilium, cert-manager, Prometheus) aren't included by default. Resources without typed options fall into three categories:</p>
+					<ol>
+						<li><strong>Rendered by Helm</strong>: nixidy parses Helm chart output into typed resources where types exist. Untyped resources pass through to the output as-is. We can't patch them via <code>resources.*</code>, but they appear in the final manifests.</li>
+						<li><strong>Included via <code>yamls</code></strong>: nixidy parses these into typed resources the same way. Untyped resources pass through.</li>
+						<li><strong>Included via <code>extraRawYamls</code></strong>: these are copied verbatim. nixidy never parses them, never strips fields, never attempts to type-check. This is the escape hatch for <a href="https://github.com/getsops/sops">SOPS</a>-encrypted manifests and other resources with non-standard structure.</li>
+					</ol>
+					<p>The key constraint: if a resource doesn't have a typed option definition for its group, version, and kind, we can't reference it under <code>resources.*</code>. It goes straight to the output. The fix is to generate typed options from the CRD.</p>
+					<h2 id="generating-typed-options-from-crds">Generating typed options from CRDs</h2>
+					<p>nixidy ships a generator called <a href="https://nixidy.dev/user_guide/typed_resources/"><code>fromCRD</code></a>
+						that reads a CRD YAML file and produces a Nix module with typed options for that resource. The generated module integrates into nixidy via <code>nixidy.applicationImports</code>. Once imported, the CRD's resources become available under <code>resources.*</code>
+						with full type checking.</p>
+					<p>Let's generate types for Cilium's <code>CiliumNetworkPolicy</code>. Let's add the generator to <code>flake.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;My Kubernetes cluster managed with nixidy&quot;</span>;
+
+  <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
+    nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
+    flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
+    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy&quot;</span>;
+  };
+
+  <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
+    nixpkgs,
+    flake-utils,
+    nixidy,
+    <span style="color: #8EC07C">...</span>
+  }:
+    flake-utils<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>eachDefaultSystem (system: <span style="color: #CC241D">let</span>
+      <span style="color: #D3869B">pkgs</span> <span style="color: #8EC07C">=</span> <span style="color: #FE8019">import</span> nixpkgs {<span style="color: #CC241D">inherit</span> system;};
+    <span style="color: #CC241D">in</span> {
+      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
+        <span style="color: #CC241D">inherit</span> pkgs;
+        <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
+          <span style="color: #B8BB26">./modules/templates.nix</span>
+          <span style="color: #B8BB26">./modules/webapps.nix</span>
+          <span style="color: #B8BB26">./modules/nginx.nix</span>
+          <span style="color: #B8BB26">./modules/traefik.nix</span>
+        ];
+        <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
+          dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
+          staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
+          prod<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/prod.nix</span> ];
+        };
+      };
+
+      packages<span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">cilium</span> <span style="color: #8EC07C">=</span>
+        nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
+          <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
+          <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub {
+            <span style="color: #D3869B">owner</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
+            <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
+            <span style="color: #D3869B">rev</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.15.6&quot;</span>;
+            <span style="color: #D3869B">hash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span>;
+          };
+          <span style="color: #D3869B">crds</span> <span style="color: #8EC07C">=</span> [
+            <span style="color: #B8BB26">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
+          ];
+        };
+    });
+}
+</code></pre></div>
+					<p>Run the generator:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#generators.cilium
+cat<span style="color: #EBDBB2"> </span>result
+</code></pre></div>
+					<p>The output is a Nix file: a module that defines typed options for <code>CiliumNetworkPolicy</code>. Copy it into the project:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>mkdir<span style="color: #EBDBB2"> </span>-p<span style="color: #EBDBB2"> </span>generated
+cp<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </span>generated/cilium.nix
+</code></pre></div>
+					<p>Then register it via <code>nixidy.applicationImports</code>
+						in one of the shared modules. For example, add to <code>modules/nginx.nix</code>
+						or create a dedicated <code>modules/crd-imports.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">applicationImports</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">../generated/cilium.nix</span> ];
+}
+</code></pre></div>
+					<div class="admonition warning">
+						<p class="admonition-title">warning</p>
+						<p><code>nixidy.applicationImports</code>
+						is different from the shared <code>modules</code>
+						list in <code>flake.nix</code>. The shared <code>modules</code>
+						list feeds into the environment-level module system. <code>nixidy.applicationImports</code>
+						feeds into the <em>per-application</em>
+						module system, meaning it makes the generated resource types available inside <code>applications.&lt;name&gt;.resources.*</code>. If you put the import in the wrong place, the types won't be visible and you'll get "attribute missing" errors.</p>
+					</div>
+					<p>Now the Cilium network policy resource is available with full type safety. Let's create <code>modules/cilium-policies.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">network-policies</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;kube-system&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">false</span>;
+
+    resources<span style="color: #8EC07C">.</span>ciliumNetworkPolicies<span style="color: #8EC07C">.</span>allow-dns<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">endpointSelector</span> <span style="color: #8EC07C">=</span> {};
+      <span style="color: #D3869B">egress</span> <span style="color: #8EC07C">=</span> [{
+        <span style="color: #D3869B">toEndpoints</span> <span style="color: #8EC07C">=</span> [{
+          matchLabels<span style="color: #8EC07C">.</span><span style="color: #B8BB26">&quot;k8s:io.kubernetes.pod.namespace&quot;</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;kube-system&quot;</span>;
+        }];
+        <span style="color: #D3869B">toPorts</span> <span style="color: #8EC07C">=</span> [{
+          <span style="color: #D3869B">ports</span> <span style="color: #8EC07C">=</span> [{ <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;53&quot;</span>; <span style="color: #D3869B">protocol</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;UDP&quot;</span>; }];
+        }];
+      }];
+    };
+  };
+}
+</code></pre></div>
+					<p>The <code>resources.ciliumNetworkPolicies</code>
+						path (the alias for the generated CRD type) only exists because <code>generated/cilium.nix</code>
+						was imported via <code>nixidy.applicationImports</code>. Without it, <code>ciliumNetworkPolicies</code>
+						would be an unrecognized attribute, and the resource would have to be included via <code>yamls</code>
+						or <code>extraRawYamls</code>
+						without type checking.</p>
+					<h2 id="generating-types-from-helm-chart-crds">Generating types from Helm chart CRDs</h2>
+					<p>Some CRDs are only available inside Helm charts, or it's preferable to keep them in sync with the chart version you're deploying. The <a href="https://nixidy.dev/user_guide/typed_resources/"><code>fromChartCRD</code></a>
+						generator handles this: it templates the Helm chart, extracts CRDs from the rendered output, and generates typed options.</p>
+					<p>As an example, let's generate types for cert-manager's <code>Certificate</code>
+						CRD:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>packages<span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">cert-manager</span> <span style="color: #8EC07C">=</span>
+  nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromChartCRD {
+    <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
+    <span style="color: #D3869B">chartAttrs</span> <span style="color: #8EC07C">=</span> {
+      <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://charts.jetstack.io&quot;</span>;
+      <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
+      <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.19.1&quot;</span>;
+      <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span>;
+    };
+    <span style="color: #D3869B">crds</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;Certificate&quot;</span> ];
+  };
+</code></pre></div>
+					<p>The workflow is the same: <code>nix build .#generators.cert-manager</code>, copy the output into <code>generated/</code>, and register via <code>nixidy.applicationImports</code>. The <code>crds</code>
+						list is optional, leave it empty to generate types for all CRDs the chart produces.</p>
+					<div class="admonition info">
+						<p class="admonition-title">info</p>
+						<p><code>fromChartCRD</code>
+						also handles CRDs that contain Helm templating within their definitions, something <code>fromCRD</code>
+						can't process because it reads raw YAML from the source tree rather than rendering a chart.</p>
+					</div>
+					<h2 id="resolving-naming-conflicts">Resolving naming conflicts</h2>
+					<p>Two operators might define a CRD with the same <code>kind</code>, two different <code>Database</code>
+						types for instance. Both would try to generate the alias <code>resources.databases</code>, producing a conflict.</p>
+					<p>The <code>fromCRD</code>
+						generator accepts a <code>namePrefix</code>
+						to disambiguate:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">postgres</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
+  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;postgres-operator&quot;</span>;
+  <span style="color: #D3869B">namePrefix</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;postgres&quot;</span>;
+  <span style="color: #928374; font-style: italic"># ...</span>
+};
+
+generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">mysql</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
+  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;mysql-operator&quot;</span>;
+  <span style="color: #D3869B">namePrefix</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;mysql&quot;</span>;
+  <span style="color: #928374; font-style: italic"># ...</span>
+};
+</code></pre></div>
+					<p>This produces <code>resources.postgresDatabases</code>
+						and <code>resources.mysqlDatabases</code>
+						with no collision.</p>
+					<p><code>namePrefix</code>
+					is a blunt instrument, it prefixes every generated attribute name. When two CRDs within the <em>same</em>
+					chart collide, or when I want a more readable name than a prefix produces, <code>attrNameOverrides</code>
+					gives direct control. It's an attribute set that maps a CRD's <code>&lt;plural&gt;.&lt;group&gt;</code>
+					identifier to the exact attribute name to use under <code>resources.*</code>.</p>
+					<p>The key on the left side is not the CRD's <code>kind</code>, it's the plural name followed by the API group, exactly as it appears in the CRD's <code>spec.names.plural</code>
+						and <code>spec.group</code>
+						fields. For example, a Keycloak Crossplane provider might ship two CRDs that both resolve to the plural <code>groups</code>
+						under different sub-groups, producing a collision on <code>resources.groups</code>. The override disambiguates:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">keycloak</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
+  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloak&quot;</span>;
+  <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub { <span style="color: #928374; font-style: italic">/* ... */</span> };
+  <span style="color: #D3869B">crds</span> <span style="color: #8EC07C">=</span> [
+    <span style="color: #B8BB26">&quot;package/crds/authenticationflow.keycloak.crossplane.io_bindings.yaml&quot;</span>
+    <span style="color: #B8BB26">&quot;package/crds/group.keycloak.crossplane.io_groups.yaml&quot;</span>
+    <span style="color: #B8BB26">&quot;package/crds/user.keycloak.crossplane.io_groups.yaml&quot;</span>
+  ];
+  <span style="color: #D3869B">namePrefix</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloak&quot;</span>;
+  <span style="color: #D3869B">attrNameOverrides</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #928374; font-style: italic"># The CRD &quot;groups&quot; under the &quot;user.keycloak.crossplane.io&quot; group</span>
+    <span style="color: #928374; font-style: italic"># would collide with the one under &quot;group.keycloak.crossplane.io&quot;.</span>
+    <span style="color: #928374; font-style: italic"># Map it to a distinct name.</span>
+    <span style="color: #B8BB26">&quot;groups.user.keycloak.crossplane.io&quot;</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloakUserGroups&quot;</span>;
+  };
+};
+</code></pre></div>
+					<p>The right-hand side (<code>"keycloakUserGroups"</code>) is the attribute name to use: <code>resources.keycloakUserGroups.my-instance</code>. It takes precedence over both <code>namePrefix</code>
+						and the auto-generated plural alias. <code>attrNameOverrides</code>
+						can be used without <code>namePrefix</code>
+						if only specific CRDs need renaming, or combined when a prefix is wanted as a default with targeted overrides.</p>
+					<div class="admonition warning">
+						<p class="admonition-title">warning</p>
+						<p>The left-hand key format is <code>&lt;plural&gt;.&lt;group&gt;</code>. It's easy to get wrong. If the override doesn't take effect, check the CRD YAML's <code>spec.names.plural</code>
+							and <code>spec.group</code>
+							fields and concatenate them with a dot. A mismatch (wrong plural, wrong group, missing sub-group) silently falls back to the auto-generated name.</p>
+					</div>
+					<h2 id="raw-yaml-for-edge-cases">Raw YAML for edge cases</h2>
+					<p>Some resources don't fit the typed model, SOPS-encrypted Secrets are the canonical example. The <code>sops</code>
+						metadata block at the top level isn't a valid Kubernetes field, and the <code>ENC[...]</code>
+						ciphertext values would be reformatted by a parse/emit round-trip, breaking decryption.</p>
+					<p>For these, use <code>extraRawYamls</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">my-app</span> <span style="color: #8EC07C">=</span> {
+  <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;my-app&quot;</span>;
+  <span style="color: #D3869B">extraRawYamls</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./encrypted-secret.yaml</span> ];
+};
+</code></pre></div>
+					<p>The file is copied verbatim into the application's output directory. nixidy never parses it, never strips fields, never type-checks it. The trade-off is that it can't be patched through <code>resources.*</code>, and <code>nixidy apply</code>
+						(the direct <code>kubectl</code>
+						path) skips it. Only Argo CD with a SOPS plugin will apply it.</p>
+					<div class="admonition warning">
+						<p class="admonition-title">warning</p>
+						<p>Basenames in <code>extraRawYamls</code>
+							must be unique within an application and must not collide with typed-resource output filenames (e.g., <code>Secret-myapp.yaml</code>). Both cases produce build-time assertion failures, nixidy catches the conflict before it reaches the cluster.</p>
+					</div>
+					<h2 id="the-full-picture">The full picture</h2>
+					<p>Here's how the three resource paths compare:</p>
+					<table>
+						<thead>
+							<tr>
+								<th>Path</th>
+								<th>Type-checked</th>
+								<th>Patchable via <code>resources.*</code></th>
+								<th>Parsed by nixidy</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><code>resources.*</code>
+								(built-in alias)</td>
+								<td>Yes</td>
+								<td>Yes</td>
+								<td>Yes</td>
+							</tr>
+							<tr>
+								<td><code>resources.*</code>
+								(CRD-generated)</td>
+								<td>Yes</td>
+								<td>Yes</td>
+								<td>Yes</td>
+							</tr>
+							<tr>
+								<td><code>resources.*</code>
+								(Helm output, typed)</td>
+								<td>Yes</td>
+								<td>Yes</td>
+								<td>Yes</td>
+							</tr>
+							<tr>
+								<td>Helm output, untyped kind</td>
+								<td>No</td>
+								<td>No</td>
+								<td>Yes (pass-through)</td>
+							</tr>
+							<tr>
+								<td><code>yamls</code></td>
+								<td>If types exist</td>
+								<td>If types exist</td>
+								<td>Yes</td>
+							</tr>
+							<tr>
+								<td><code>extraRawYamls</code></td>
+								<td>No</td>
+								<td>No</td>
+								<td>No (verbatim copy)</td>
+							</tr>
+						</tbody>
+					</table>
+					<p>The rule of thumb: if a resource has typed options (built-in or generated), define it under <code>resources.*</code>
+						and get build-time validation. If it doesn't, generate the types from the CRD. If generation isn't feasible (encrypted manifests, non-standard structures), fall back to <code>extraRawYamls</code>.</p>
+					<h2 id="whats-next">What's next</h2>
+					<p>Typed resources give me confidence that what I write is what Kubernetes expects in terms of the type of data for each field of a manifest. What it can't ensure is broader requirements such as minimum replicas for some or all deployments or when application A is deployed then application B <em>must</em>
+						also be deployed. In <a href="/posts/nixidy-part-5-assertions-and-warnings/">part 5</a>
+						we will cover build-time assertions and warnings which can be used to define such requirements.</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="pt-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+				<div class="py-8 text-sm">
+					This website is generated with
+					<a class="underline" href="https://github.com/arnarg/nixtml">
+						nixtml
+					</a>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

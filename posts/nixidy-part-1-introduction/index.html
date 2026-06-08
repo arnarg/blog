@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="content-type" content="text/html" charset="UTF-8">
+		<meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			nixidy part 1: Introduction to nixidy | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="nixidy part 1: Introduction to nixidy | codedbearder">
+		<meta property="twitter:title" content="nixidy part 1: Introduction to nixidy | codedbearder">
+		<meta itemprop="name" content="nixidy part 1: Introduction to nixidy | codedbearder">
+		<meta name="application-name" content="nixidy part 1: Introduction to nixidy | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						nixidy part 1: Introduction to nixidy
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Jun 8, 2026
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/nixidy">
+							#nixidy
+						</a>
+						<a class="no-underline" href="/tags/nix">
+							#nix
+						</a>
+						<a class="no-underline" href="/tags/kubernetes">
+							#kubernetes
+						</a>
+						<a class="no-underline" href="/tags/gitops">
+							#gitops
+						</a>
+						<a class="no-underline" href="/tags/argocd">
+							#argocd
+						</a>
+						<a class="no-underline" href="/tags/tutorial">
+							#tutorial
+						</a>
+					</div>
+
+					<p>I have managed many GitOps repositories for Kubernetes with ArgoCD and I'm sure I'm not alone in having opened a Helm values override file that was 600 lines of YAML and still not being sure which values actually made it into the rendered manifests. I've run <code>helm template</code>, piped it through <code>grep</code>, given up, committed it anyway and hoped the staging diff would catch anything my eyes missed.</p>
+					<p>That gap between what you <em>think</em>
+						you're deploying and what actually lands in the cluster is exactly what <a href="https://github.com/arnarg/nixidy">nixidy</a>
+						is meant to close. I wrote it to replace Helm value files, Kustomize overlays, and raw YAML with a single Nix expression per environment. Every field is typed, every build is reproducible, and the output is plain YAML you can <code>git diff</code>
+						before it ever touches a cluster.</p>
+					<!--more-->
+
+					<p>By the end of this part we'll have a working nixidy project that defines an nginx Deployment and Service, generates Argo CD <code>Application</code>
+						manifests automatically, and deploys to your cluster through GitOps.</p>
+					<h2 id="what-youll-build">What you'll build</h2>
+					<p>We're going to build a nixidy environment called <code>dev</code>
+						containing one application deployed to your cluster via Argo CD. The project structure will be the skeleton you'd extend to manage an entire production cluster.</p>
+					<h2 id="prerequisites">Prerequisites</h2>
+					<ul>
+						<li><strong>Nix</strong>
+						installed with flakes enabled (<a href="https://nixos.org/download.html">download</a>)</li>
+						<li><strong>A Kubernetes cluster</strong>
+						with <strong>Argo CD</strong>
+						installed</li>
+						<li><strong>A Git repository</strong>
+						for your Kubernetes manifests (GitHub, GitLab, etc.)</li>
+						<li><strong>Basic familiarity</strong>
+						with Kubernetes Deployments, Services, and Namespaces</li>
+						<li><strong>Basic familiarity</strong>
+						with Argo CD <code>Application</code>
+						resources</li>
+					</ul>
+					<div class="admonition info">
+						<p class="admonition-title">info</p>
+						<p>nixidy implements the <a href="https://akuity.io/blog/the-rendered-manifests-pattern/">Rendered Manifests Pattern</a>
+							where your CI generates plain YAML, you review it in PRs, and Argo CD deploys it. If you've used Argo CD with raw YAML or Kustomize before, the deployment side is identical. The difference is entirely in <em>how the YAML is produced</em>.</p>
+					</div>
+					<h2 id="a-nix-expression-that-builds-a-kubernetes-manifest">A Nix expression that builds a Kubernetes manifest</h2>
+					<p>The core idea behind nixidy is that every Kubernetes resource is a typed Nix option. A Deployment isn't a blob of YAML, it's a structured attribute set where <code>replicas</code>
+						is an integer, <code>image</code>
+						is a string, and a typo in <code>selector</code>
+						is a build error, not a runtime surprise.</p>
+					<p>Let's start by creating the project:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>mkdir<span style="color: #EBDBB2"> </span>my-cluster<span style="color: #EBDBB2"> </span><span style="color: #8EC07C">&amp;&amp;</span><span style="color: #EBDBB2"> </span><span style="color: #FE8019">cd</span><span style="color: #EBDBB2"> </span>my-cluster
+git<span style="color: #EBDBB2"> </span>init
+</code></pre></div>
+					<p>Now create <code>flake.nix</code>, this is the entry point that wires nixidy into your Nix flake:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;My Kubernetes cluster managed with nixidy&quot;</span>;
+
+  <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
+    nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
+    flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
+    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy&quot;</span>;
+  };
+
+  <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
+    nixpkgs,
+    flake-utils,
+    nixidy,
+    <span style="color: #8EC07C">...</span>
+  }:
+    flake-utils<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>eachDefaultSystem (system: <span style="color: #CC241D">let</span>
+      <span style="color: #D3869B">pkgs</span> <span style="color: #8EC07C">=</span> <span style="color: #FE8019">import</span> nixpkgs {<span style="color: #CC241D">inherit</span> system;};
+    <span style="color: #CC241D">in</span> {
+      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
+        <span style="color: #CC241D">inherit</span> pkgs;
+        envs<span style="color: #8EC07C">.</span>dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
+      };
+    });
+}
+</code></pre></div>
+					<p>A couple things worth noting:</p>
+					<ul>
+						<li><code>nixidy.lib.mkEnvs</code>
+						takes a set of named environments and returns Nix derivations that build YAML manifests. The key <code>dev</code>
+						becomes the attribute you reference with <code>.#dev</code>.</li>
+						<li>Each environment takes a list of NixOS-style modules which are plain <code>.nix</code>
+							files that set options. This is the same module system that powers NixOS, which means you get <code>imports</code>, <code>lib.mkDefault</code>, <code>lib.mkForce</code>, and all the composition primitives you'd expect.</li>
+					</ul>
+					<div class="admonition info">
+						<p class="admonition-title">info</p>
+						<p>If you've configured a NixOS system before, the shape is identical: a list of modules that set options, merged by the module system. The difference is that the options describe Kubernetes resources instead of system services.</p>
+					</div>
+					<h2 id="an-environment-module-with-one-application">An environment module with one application</h2>
+					<p>Now let's create the environment directory and the dev module:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>mkdir<span style="color: #EBDBB2"> </span>-p<span style="color: #EBDBB2"> </span>env
+</code></pre></div>
+					<p>Write <code>env/dev.nix</code>. Make sure to replace the repository URL with your own (this is where nixidy will tell Argo CD to look for rendered manifests):</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/dev&quot;</span>;
+
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+    <span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
+      deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">2</span>;
+        selector<span style="color: #8EC07C">.</span>matchLabels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
+          metadata<span style="color: #8EC07C">.</span>labels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx:1.25.1&quot;</span>;
+            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
+          };
+        };
+      };
+
+      services<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+        ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
+      };
+    };
+  };
+}
+</code></pre></div>
+					<p>Let me walk through what this declares:</p>
+					<ul>
+						<li><strong><code>nixidy.target.*</code></strong>: Where the generated YAML ends up in your Git repo. Argo CD <code>Application</code>
+						manifests will reference this repo, branch, and path.</li>
+						<li><strong><code>applications.nginx</code></strong>: One logical application. An application gets its own directory in the output and its own Argo CD <code>Application</code>
+						manifest.</li>
+						<li><strong><code>namespace = "nginx"</code></strong>: All resources in this application are deployed to the <code>nginx</code>
+						namespace.</li>
+						<li><strong><code>createNamespace = true</code></strong>: Nixidy generates a <code>Namespace</code>
+						manifest automatically. Without this, you'd need to create the namespace out-of-band.</li>
+						<li><strong><code>resources.deployments.nginx</code></strong>: A typed Deployment. The <code>spec</code>
+						attribute follows the <a href="https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/deployment-v1/">Kubernetes Deployment spec</a>, but enforced at Nix evaluation time.</li>
+						<li><strong><code>resources.services.nginx</code></strong>: A typed Service, same idea.</li>
+					</ul>
+					<div class="admonition info">
+						<p class="admonition-title">Why not just write the YAML?</p>
+						<p>Two reasons.</p>
+						<ol>
+							<li>Type errors become build errors. Set <code>replicas = "two"</code>
+								in the module above and <code>nixidy build</code>
+								fails immediately, not 15 minutes into a deployment rollout.</li>
+							<li>Composition. When you add a <code>prod.nix</code>
+								that imports this same module and sets <code>replicas = lib.mkForce 10</code>, you're expressing "same app, different scale" in two lines instead of copying an entire YAML file and changing one number. The NixOS module system (<code>imports</code>, <code>lib.mkDefault</code>, <code>lib.mkForce</code>) gives you this for free, and it's the same mechanism that handles multi-environment NixOS configs.</li>
+						</ol>
+					</div>
+					<h2 id="build-the-manifests">Build the manifests</h2>
+					<p>Run the build:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+</code></pre></div>
+					<div class="admonition info">
+						<p class="admonition-title">info</p>
+						<p>The first run downloads nixidy and its dependencies into the Nix store. Subsequent runs are instant if nothing changed.</p>
+					</div>
+					<p>Inspect the output:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>tree<span style="color: #EBDBB2"> </span>result
+</code></pre></div>
+					<p>You should see:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>result/
+├── apps/
+│   └── Application-nginx.yaml
+└── nginx/
+    ├── Deployment-nginx.yaml
+    ├── Namespace-nginx.yaml
+    └── Service-nginx.yaml
+</code></pre></div>
+					<p>Look at the generated Deployment:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml
+</code></pre></div>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">apps/v1</span>
+<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Deployment</span>
+<span style="color: #8EC07C; font-weight: bold">metadata</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #8EC07C; font-weight: bold">spec</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">replicas</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">2</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">selector</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">matchLabels</span>:
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">app</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">template</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">metadata</span>:
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">labels</span>:
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">app</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">spec</span>:
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">containers</span>:
+<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">image</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx:1.25.1</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">ports</span>:
+<span style="color: #EBDBB2">            </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">containerPort</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">80</span>
+<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">http</span>
+</code></pre></div>
+					<p>And the Argo CD <code>Application</code>
+						that nixidy generated for you:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>cat<span style="color: #EBDBB2"> </span>result/apps/Application-nginx.yaml
+</code></pre></div>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">argoproj.io/v1alpha1</span>
+<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Application</span>
+<span style="color: #8EC07C; font-weight: bold">metadata</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">argocd</span>
+<span style="color: #8EC07C; font-weight: bold">spec</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">destination</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">server</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">https://kubernetes.default.svc</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">project</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">default</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">source</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">path</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">./manifests/dev/nginx</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">repoURL</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">https://github.com/YOUR_USERNAME/my-cluster.git</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">targetRevision</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">main</span>
+</code></pre></div>
+					<p>Every <code>applications.*</code>
+						block produces exactly one Argo CD <code>Application</code>
+						pointing at the directory containing its rendered manifests. This is the rendered manifests pattern: Argo CD syncs plain YAML, not templates, not Helm releases, just static files it can diff against the cluster state.</p>
+					<h2 id="commit-the-rendered-manifests">Commit the rendered manifests</h2>
+					<p>The <code>nixidy switch</code>
+						command copies the built manifests into your repository at the <code>rootPath</code>
+						you configured:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>switch<span style="color: #EBDBB2"> </span>.#dev
+</code></pre></div>
+					<p>This creates <code>./manifests/dev/</code>
+						with the same directory tree as <code>result/</code>. Commit and push:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>git<span style="color: #EBDBB2"> </span>add<span style="color: #EBDBB2"> </span>.
+git<span style="color: #EBDBB2"> </span>commit<span style="color: #EBDBB2"> </span>-m<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;Add nginx application via nixidy&quot;</span>
+git<span style="color: #EBDBB2"> </span>push
+</code></pre></div>
+					<p>The rendered YAML is now in your repository. Argo CD can see it.</p>
+					<h2 id="deploy-to-your-cluster">Deploy to your cluster</h2>
+					<h3 id="bootstrap-with-argo-cd">Bootstrap with Argo CD</h3>
+					<p>If Argo CD is already running in your cluster, one command creates an "app of apps" (a parent <code>Application</code>
+						that manages all your nixidy applications):</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>bootstrap<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>kubectl<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>-f<span style="color: #EBDBB2"> </span>-
+</code></pre></div>
+					<p>This outputs an Argo CD <code>Application</code>
+						manifest that points at <code>manifests/dev/apps/</code>
+						in your repo. Argo CD reads that directory, discovers <code>Application-nginx.yaml</code>, creates the nginx <code>Application</code>, which then syncs the Deployment, Service, and Namespace into your cluster.</p>
+					<h3 id="or-apply-directly-for-testing">Or: apply directly (for testing)</h3>
+					<p>If you want to skip Argo CD temporarily, a local <code>kind</code>
+						cluster for instance:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>.#dev
+</code></pre></div>
+					<p>This runs <code>kubectl apply --prune</code>
+						with the correct label selectors, so resources removed from your nixidy config are also removed from the cluster on the next apply (if resources have been removed).</p>
+					<h2 id="whats-next">What's next</h2>
+					<p>We now have one application in one environment. Real clusters have a dozen applications across dev, staging, and production and I don't want to copy-paste the same Deployment into three files. In <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>
+						we'll refactor the nginx application into a shared module, override <code>replicas</code>
+						per environment with <code>lib.mkDefault</code>
+						and <code>lib.mkForce</code>, and integrate a Helm chart without giving up type safety.</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="pt-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+				<div class="py-8 text-sm">
+					This website is generated with
+					<a class="underline" href="https://github.com/arnarg/nixtml">
+						nixtml
+					</a>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>

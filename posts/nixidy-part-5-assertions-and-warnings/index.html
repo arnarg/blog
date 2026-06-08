@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<link rel="stylesheet" href="/css/main.css">
+		<meta http-equiv="content-type" content="text/html" charset="UTF-8">
+		<meta http-equiv="x-ua-compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="msapplication-TileColor" name="#da532c">
+		<meta name="theme-color" name="#ffffff">
+		<link rel="icon" href="/favicon.png">
+
+		<title>
+			nixidy part 5: Build-time assertions and warnings | codedbearder
+		</title>
+		<meta name="description" content="codedbearder's blog">
+		<meta property="og:title" content="nixidy part 5: Build-time assertions and warnings | codedbearder">
+		<meta property="twitter:title" content="nixidy part 5: Build-time assertions and warnings | codedbearder">
+		<meta itemprop="name" content="nixidy part 5: Build-time assertions and warnings | codedbearder">
+		<meta name="application-name" content="nixidy part 5: Build-time assertions and warnings | codedbearder">
+		<meta property="og:site_name" content="codedbearder">
+		<meta property="og:locale" content="en">
+		<meta property="og:type" content="article">
+	</head>
+	<body class="font-sans bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-200">
+		<div class="container max-w-3xl mx-auto px-4">
+			<header class="pt-8 pb-12">
+				<h1 class="text-stone-700 dark:text-stone-300 text-center text-5xl font-extralight">
+					<a href="/">
+						codedbearder
+					</a>
+				</h1>
+			</header>
+			<main>
+				<article class="max-w-3xl">
+					<h1 class="my-6 !font-light">
+						nixidy part 5: Build-time assertions and warnings
+					</h1>
+					<div class="mb-2 text-stone-900 dark:text-stone-200">
+						Posted on Jun 8, 2026
+					</div>
+					<div class="flex flex-row gap-4">
+						<a class="no-underline" href="/tags/nixidy">
+							#nixidy
+						</a>
+						<a class="no-underline" href="/tags/nix">
+							#nix
+						</a>
+						<a class="no-underline" href="/tags/kubernetes">
+							#kubernetes
+						</a>
+						<a class="no-underline" href="/tags/gitops">
+							#gitops
+						</a>
+						<a class="no-underline" href="/tags/argocd">
+							#argocd
+						</a>
+						<a class="no-underline" href="/tags/tutorial">
+							#tutorial
+						</a>
+					</div>
+
+					<p>Type checking catches the wrong shape of data: a string where an integer belongs, a missing required field. But it can't catch semantic errors like a production Deployment with zero replicas, a namespace that isn't being created, or two applications that must always be deployed together. These are invariants about the cluster configuration that no schema can express.</p>
+					<p>nixidy borrows the NixOS assertion and warning system for exactly this. Assertions are build-time hard constraints: if one fails, the build stops. Warnings are advisory, they print to stderr but don't block the build. Both are evaluated during <code>nixidy build</code>, before any YAML reaches the repository or the cluster.</p>
+					<!--more-->
+
+					<p>By the end of this part we'll have per-application assertions that enforce production hardening rules, global assertions that validate cross-application invariants, and warnings that surface potential misconfigurations without blocking iteration.</p>
+					<h2 id="what-youll-build">What you'll build</h2>
+					<p>We're going to add assertions on the <code>nginx</code>
+						and <code>webapp</code>
+						applications that enforce resource limits in production and reject zero-replica Deployments. Plus a global assertion that verifies all production applications have auto-sync enabled, and warnings that flag missing resource requests in dev and staging.</p>
+					<h2 id="prerequisites">Prerequisites</h2>
+					<ul>
+						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>, <a href="/posts/nixidy-part-3-reusable-templates/">3</a>
+						and <a href="/posts/nixidy-part-4-typed-resource-options/">4</a>
+						complete</li>
+						<li>The same toolchain: <strong>Nix</strong>
+							and <strong>nixidy</strong></li>
+					</ul>
+					<h2 id="per-application-assertions">Per-application assertions</h2>
+					<p>An assertion is a boolean condition and a message. If the condition evaluates to <code>false</code>, the build fails and prints the message. Assertions live under <code>applications.&lt;name&gt;.assertions</code>.</p>
+					<p>Let's open <code>modules/nginx.nix</code>
+						and add an assertion that rejects zero replica counts:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, config, <span style="color: #8EC07C">...</span> }:
+{
+  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+    <span style="color: #D3869B">assertions</span> <span style="color: #8EC07C">=</span> [
+      {
+        <span style="color: #D3869B">assertion</span> <span style="color: #8EC07C">=</span>
+          config<span style="color: #8EC07C">.</span>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>replicas <span style="color: #8EC07C">&gt;</span> <span style="color: #D3869B">0</span>;
+        <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx must have at least 1 replica, got </span><span style="color: #D3869B">${</span>
+          <span style="color: #FE8019">toString</span> config<span style="color: #8EC07C">.</span>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>replicas
+        <span style="color: #D3869B">}</span><span style="color: #B8BB26">&quot;</span>;
+      }
+    ];
+
+    <span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
+      deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkDefault <span style="color: #D3869B">2</span>;
+        selector<span style="color: #8EC07C">.</span>matchLabels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
+          metadata<span style="color: #8EC07C">.</span>labels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx:1.25.1&quot;</span>;
+            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
+          };
+        };
+      };
+
+      services<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
+        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+        ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
+      };
+    };
+  };
+}
+</code></pre></div>
+					<p>A couple things to notice:</p>
+					<ul>
+						<li>The module function now takes <code>config</code>
+							in addition to <code>lib</code>. The <code>config</code>
+							argument gives access to the fully-resolved option values, so <code>config.applications.nginx.resources.deployments.nginx.spec.replicas</code>
+							is the merged, priority-resolved value after all modules have been evaluated.</li>
+						<li>The assertion references the full option path, not a local variable. This is deliberate: the assertion checks the <em>final</em>
+							value, after <code>mkDefault</code>
+							and <code>mkForce</code>
+							have been resolved. If <code>env/prod.nix</code>
+							sets <code>replicas = lib.mkForce 0</code>, the assertion catches it.</li>
+					</ul>
+					<p>Let's test it. Temporarily set <code>replicas = 0</code>
+						in <code>env/dev.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span><span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">0</span>;
+</code></pre></div>
+					<p>Build:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+</code></pre></div>
+					<p>Expected output:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>error: failed assertions:
+- assertion(nginx): nginx must have at least 1 replica, got 0
+</code></pre></div>
+					<p>The <code>assertion(nginx)</code>
+						prefix tells us which application's assertion block failed. Revert the change and rebuild and the build succeeds again.</p>
+					<div class="admonition info">
+						<p class="admonition-title">info</p>
+						<p>Assertions are evaluated during <em>every</em>
+							<code>nixidy build</code>, <code>nixidy switch</code>, and <code>nixidy apply</code>. They don't just guard CI, they guard the local workflow too. If I add an assertion that production deployments must have resource limits, <code>nixidy build .#prod</code>
+							will fail on my laptop before I ever commit. That's the point: the invariant is enforced by the build system, not by review discipline.</p>
+					</div>
+					<h2 id="assertions-that-reference-other-applications">Assertions that reference other applications</h2>
+					<p>The <code>config</code>
+						argument is global, it contains <em>all</em>
+						applications, not just the one where the assertion is defined. This means assertions can be written that span multiple applications.</p>
+					<p>A common pattern is a shared module that all environments import, containing global invariants. Let's create <code>modules/assertions.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, config, <span style="color: #8EC07C">...</span> }:
+{
+  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">assertions</span> <span style="color: #8EC07C">=</span> [
+    {
+      <span style="color: #D3869B">assertion</span> <span style="color: #8EC07C">=</span>
+        lib<span style="color: #8EC07C">.</span>all
+          (app: app<span style="color: #8EC07C">.</span>syncPolicy<span style="color: #8EC07C">.</span>autoSync<span style="color: #8EC07C">.</span>enable <span style="color: #8EC07C">or</span> <span style="color: #83A598">false</span>)
+          (lib<span style="color: #8EC07C">.</span>attrValues config<span style="color: #8EC07C">.</span>applications);
+      <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;All applications must have auto-sync enabled in this project&quot;</span>;
+    }
+  ];
+}
+</code></pre></div>
+					<p>This is a global assertion, defined under <code>nixidy.assertions</code>
+						instead of under a specific application. It iterates over every application in the environment and checks that <code>syncPolicy.autoSync.enable</code>
+						is <code>true</code>. If any application doesn't have it set, the build fails.</p>
+					<div class="admonition tip">
+						<p class="admonition-title">Per-application vs. global assertions</p>
+						<p>Per-application assertions (<code>applications.&lt;name&gt;.assertions</code>) are scoped, they check invariants about a single application and the error message includes the application name. Use them for rules like "must have at least one Deployment" or "replicas must be positive."</p>
+						<p>Global assertions (<code>nixidy.assertions</code>) check invariants that span the entire environment. Use them for rules like "all applications must have auto-sync" or "every namespace used by an application must exist." The error message is prefixed with <code>global</code>
+							instead of an application name.</p>
+						<p>The boundary is pragmatic: if the assertion only makes sense in the context of one application, put it there. If it requires comparing multiple applications, make it global.</p>
+					</div>
+					<h2 id="warnings-for-non-blocking-checks">Warnings for non-blocking checks</h2>
+					<p>Not every misconfiguration should block the build. A missing resource request in dev is worth flagging (it might be intentional for fast iteration). A missing resource request in production is a different story, but that's what assertions are for.</p>
+					<p>Warnings print a message to stderr during evaluation but don't fail the build. They come in two forms: conditional and unconditional.</p>
+					<p>Conditional warning (only prints when <code>when</code>
+						evaluates to <code>true</code>):</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
+  <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
+  <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
+
+  <span style="color: #D3869B">warnings</span> <span style="color: #8EC07C">=</span> [
+    {
+      <span style="color: #D3869B">when</span> <span style="color: #8EC07C">=</span> <span style="color: #8EC07C">!</span>config<span style="color: #8EC07C">.</span>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>createNamespace;
+      <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx is not creating its namespace, make sure it exists on the cluster&quot;</span>;
+    }
+  ];
+
+  <span style="color: #928374; font-style: italic"># ... resources ...</span>
+};
+</code></pre></div>
+					<p>Unconditional warning (always prints). Useful for deprecation notices during a migration:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">warnings</span> <span style="color: #8EC07C">=</span> [
+  <span style="color: #B8BB26">&quot;nginx is using a deprecated image tag pattern. Migrate to &#39;nginx:1.25.x&#39; before upgrading internal-app to v0.20.0.&quot;</span>
+];
+</code></pre></div>
+					<p>Global warnings work the same way as global assertions:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">warnings</span> <span style="color: #8EC07C">=</span> [
+  {
+    <span style="color: #D3869B">when</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span>branch <span style="color: #8EC07C">!=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+    <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Target branch is &#39;</span><span style="color: #D3869B">${</span>config<span style="color: #8EC07C">.</span>nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span>branch<span style="color: #D3869B">}</span><span style="color: #B8BB26">&#39;, not &#39;main&#39;. Make sure this is intentional&quot;</span>;
+  }
+];
+</code></pre></div>
+					<div class="admonition tip">
+						<p class="admonition-title">tip</p>
+						<p>An unconditional warning is shorthand for <code>{ when = true; message = "..."; }</code>. nixidy expands it internally. Use the shorthand for migration notices and persistent reminders, and the conditional form for checks that should only fire in specific configurations.</p>
+					</div>
+					<h2 id="a-production-hardening-module">A production hardening module</h2>
+					<p>The real power of assertions is encoding organizational policy as build-time checks. Let's create <code>modules/production-hardening.nix</code>:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, config, <span style="color: #8EC07C">...</span> }:
+{
+  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">assertions</span> <span style="color: #8EC07C">=</span> [
+    {
+      <span style="color: #D3869B">assertion</span> <span style="color: #8EC07C">=</span>
+        lib<span style="color: #8EC07C">.</span>all
+          (app:
+            <span style="color: #CC241D">let</span>
+              <span style="color: #D3869B">deploys</span> <span style="color: #8EC07C">=</span> app<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments <span style="color: #8EC07C">or</span> {};
+            <span style="color: #CC241D">in</span>
+              lib<span style="color: #8EC07C">.</span>all
+                (dep:
+                  <span style="color: #CC241D">let</span>
+                    <span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> dep<span style="color: #8EC07C">.</span>spec <span style="color: #8EC07C">or</span> {};
+                    <span style="color: #D3869B">containers</span> <span style="color: #8EC07C">=</span> spec<span style="color: #8EC07C">.</span>template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers <span style="color: #8EC07C">or</span> {};
+                  <span style="color: #CC241D">in</span>
+                    lib<span style="color: #8EC07C">.</span>all
+                      (c: c<span style="color: #8EC07C">.</span>resources <span style="color: #8EC07C">?</span> limits <span style="color: #8EC07C">&amp;&amp;</span> c<span style="color: #8EC07C">.</span>resources <span style="color: #8EC07C">?</span> requests)
+                      (lib<span style="color: #8EC07C">.</span>attrValues containers))
+                (lib<span style="color: #8EC07C">.</span>attrValues deploys))
+          (lib<span style="color: #8EC07C">.</span>attrValues config<span style="color: #8EC07C">.</span>applications);
+      <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;All containers in all deployments must have resource requests and limits set&quot;</span>;
+    }
+  ];
+}
+</code></pre></div>
+					<p>This walks every application, every Deployment, and every container and asserts that each one has both <code>requests</code>
+						and <code>limits</code>
+						defined. It's a mouthful, but it only needs to be written once in a shared module. Every environment that imports it gets the check for free.</p>
+					<p>I'll import it only in <code>env/prod.nix</code>
+						since dev and staging don't need this gate:</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
+{
+  <span style="color: #D3869B">imports</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">../modules/production-hardening.nix</span> ];
+
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
+  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/prod&quot;</span>;
+
+  <span style="color: #928374; font-style: italic"># ... prod overrides ...</span>
+}
+</code></pre></div>
+					<p>Build <code>.#dev</code>
+						and it succeeds without the hardening check. Build <code>.#prod</code>
+						and if any container is missing resource limits, the build fails with a clear message.</p>
+					<h2 id="whats-next">What's next</h2>
+					<p>Assertions close the last gap between "the types are correct" and "the configuration is correct." But the rendered manifests still need to reach the Git repository and the cluster. <a href="/posts/nixidy-part-6-ci-workflow/">Part 6</a>
+						covers CI integration: the <code>arnarg/nixidy/actions/build</code>
+						and <code>arnarg/nixidy/actions/switch</code>
+						GitHub Actions, the promotion workflow from Nix changes to reviewed YAML diffs, and the <code>nixidy diff</code>
+						command for comparing environments before promotion.</p>
+				</article>
+			</main>
+			<footer class="text-center text-stone-600 dark:text-stone-400">
+				<div class="py-8">
+					* * *
+				</div>
+				<div class="flex flex-row justify-center gap-4">
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://github.com/arnarg" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/github.svg" alt="GitHub Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://www.linkedin.com/in/arnari" target="_blank">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/linkedin.svg" alt="Linkedin Logo">
+					</a>
+					<a class="group rounded-full duration-200 border border-stone-700 dark:border-stone-300 hover:bg-stone-700 dark:hover:bg-stone-300" href="https://floss.social/@arnar" rel="me">
+						<img class="h-4 w-4 m-1.5 duration-200 invert-[.20] group-hover:invert dark:invert-[.80] dark:group-hover:invert-[.20]" src="/images/mastodon.svg" alt="Mastodon Logo">
+					</a>
+				</div>
+				<div class="pt-8 text-sm">
+					© Arnar Gauti Ingason
+				</div>
+				<div class="py-8 text-sm">
+					This website is generated with
+					<a class="underline" href="https://github.com/arnarg/nixtml">
+						nixtml
+					</a>
+				</div>
+			</footer>
+		</div>
+	</body>
+</html>
