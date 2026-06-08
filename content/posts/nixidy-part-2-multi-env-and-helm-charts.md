@@ -2,7 +2,6 @@
 title: "nixidy part 2: Multi-environments and Helm charts"
 date: 2026-06-08T10:30:00Z
 tags:
-  - nixidy
   - nix
   - kubernetes
   - gitops

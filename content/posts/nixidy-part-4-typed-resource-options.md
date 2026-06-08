@@ -2,7 +2,6 @@
 title: "nixidy part 4: Typed resource options and CRD generation"
 date: 2026-06-08T11:30:00Z
 tags:
-  - nixidy
   - nix
   - kubernetes
   - gitops

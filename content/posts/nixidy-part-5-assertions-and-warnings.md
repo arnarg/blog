@@ -2,7 +2,6 @@
 title: "nixidy part 5: Build-time assertions and warnings"
 date: 2026-06-08T12:00:00Z
 tags:
-  - nixidy
   - nix
   - kubernetes
   - gitops

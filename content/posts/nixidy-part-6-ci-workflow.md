@@ -2,7 +2,6 @@
 title: "nixidy part 6: CI integration and the promotion workflow"
 date: 2026-06-08T12:30:00Z
 tags:
-  - nixidy
   - nix
   - kubernetes
   - gitops

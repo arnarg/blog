@@ -2,7 +2,6 @@
 title: "nixidy part 3: Reusable templates for recurring application patterns"
 date: 2026-06-08T11:00:00Z
 tags:
-  - nixidy
   - nix
   - kubernetes
   - gitops

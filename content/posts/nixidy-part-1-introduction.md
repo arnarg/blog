@@ -2,7 +2,6 @@
 title: "nixidy part 1: Introduction to nixidy"
 date: 2026-06-08T10:00:00Z
 tags:
-  - nixidy
   - nix
   - kubernetes
   - gitops
