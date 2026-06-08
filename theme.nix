@@ -109,11 +109,16 @@ in
                   ) metadata.tags
                 )
               )
-              (img [
-                (attrs.classes [ "rounded" ])
-                (attrs.src metadata.thumbnail)
-                (attrs.alt "thumbnail")
-              ])
+              (
+                if metadata ? thumbnail then
+                  (img [
+                    (attrs.classes [ "rounded" ])
+                    (attrs.src metadata.thumbnail)
+                    (attrs.alt "thumbnail")
+                  ])
+                else
+                  ""
+              )
               content
               (partials.discuss metadata)
             ]

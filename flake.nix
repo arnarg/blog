@@ -44,7 +44,11 @@
 
           collections.blog = {
             path = "posts";
-            taxonomies = [ "tags" ];
+            pagination.perPage = 8;
+            taxonomies = [
+              "tags"
+              "series"
+            ];
           };
 
           imports = [ ./theme.nix ];
