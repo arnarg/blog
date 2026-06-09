@@ -206,6 +206,32 @@ spec:
   endpointSelector: {}
 ```
 
+/// admonition | **Coming in v0.20.0** (but already available on `main`)
+    type: tip
+
+`fromCRD` generates a file you build, copy, and import. The module accessor `fromCRDModule` returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the `generators` argument in nixidy modules:
+
+```nix
+{ generators, ... }:
+{
+  nixidy.applicationImports = [
+    (generators.fromCRDModule {
+      name = "cilium";
+      src = pkgs.fetchFromGitHub {
+        owner = "cilium";
+        repo = "cilium";
+        rev = "v1.15.6";
+        hash = "sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=";
+      };
+      crdFiles = [
+        "pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml"
+      ];
+    })
+  ];
+}
+```
+///
+
 ## Generating types from Helm chart CRDs
 
 Some CRDs are only available inside Helm charts, or it's preferable to keep them in sync with the chart version you're deploying. The [`fromChartCRD`](https://nixidy.dev/user_guide/typed_resources/) generator handles this: it templates the Helm chart, extracts CRDs from the rendered output, and generates typed options.
@@ -232,6 +258,30 @@ The workflow is the same: `nix build .#generators.cert-manager`, copy the output
     type: info
     
 `fromChartCRD` also handles CRDs that contain Helm templating within their definitions, something `fromCRD` can't process because it reads raw YAML from the source tree rather than rendering a chart.
+///
+
+/// admonition | **Coming in v0.20.0** (but already available on `main`)
+    type: tip
+
+Like `fromCRD` has `fromCRDModule`, `fromChartCRD` has `fromChartCRDModule` which also returns a module value instead of a generated file:
+
+```nix
+{ generators, ... }:
+{
+  nixidy.applicationImports = [
+    (generators.fromChartCRDModule {
+      name = "cert-manager";
+      chartAttrs = {
+        repo = "https://charts.jetstack.io";
+        chart = "cert-manager";
+        version = "v1.19.1";
+        chartHash = "sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=";
+      };
+      kindFilter = [ "Certificate" ];
+    })
+  ];
+}
+```
 ///
 
 ## Resolving naming conflicts
