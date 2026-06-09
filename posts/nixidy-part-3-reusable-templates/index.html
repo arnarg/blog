@@ -250,6 +250,24 @@
   <span style="color: #B8BB26">./modules/traefik.nix</span>
 ];
 </code></pre></div>
+					<p>Then let's build the dev environment and review the output.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+tree<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </span>-l
+</code></pre></div>
+					<p>It should show that the <code>frontend</code>
+						and <code>api</code>
+						resources were generated.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>result
+├── api
+│   ├── Deployment-api.yaml
+│   ├── Namespace-api.yaml
+│   └── Service-api.yaml
+└── frontend
+    ├── Deployment-frontend.yaml
+    ├── Ingress-frontend.yaml
+    ├── Namespace-frontend.yaml
+    └── Service-frontend.yaml
+</code></pre></div>
 					<h2 id="patching-template-generated-resources">Patching template-generated resources</h2>
 					<p>Template output is regular nixidy resources and I can override individual fields the same way I'd override a shared module. If the frontend needs a memory limit that the template doesn't expose as an option:</p>
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
@@ -271,6 +289,42 @@
 </code></pre></div>
 					<p>The template generates the Deployment. The <code>resources.deployments.frontend</code>
 						block merges with the generated output and adds resource limits without touching the template.</p>
+					<p>Now if we build the dev environment and look at the <code>frontend</code>
+						deployment.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+cat<span style="color: #EBDBB2"> </span>result/frontend/Deployment-frontend.yaml
+</code></pre></div>
+					<p>It should show you a <code>Deployment</code>
+						with resource requests and limits added.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">apps/v1</span>
+<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Deployment</span>
+<span style="color: #8EC07C; font-weight: bold">metadata</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #8EC07C; font-weight: bold">spec</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">replicas</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">3</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">selector</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">matchLabels</span>:
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/instance</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">template</span>:
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">metadata</span>:
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">labels</span>:
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/instance</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">spec</span>:
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">containers</span>:
+<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">image</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend:v1.2.3</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">ports</span>:
+<span style="color: #EBDBB2">            </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">containerPort</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">3000</span>
+<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">http</span>
+<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">resources</span>:
+<span style="color: #EBDBB2">            </span><span style="color: #8EC07C; font-weight: bold">limits</span>:
+<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">memory</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">128Mi</span>
+<span style="color: #EBDBB2">            </span><span style="color: #8EC07C; font-weight: bold">requests</span>:
+<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">memory</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">64Mi</span>
+</code></pre></div>
 					<h2 id="whats-next">What's next</h2>
 					<p>Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In <a href="/posts/nixidy-part-4-typed-resource-options/">part 4</a>
 						I'll cover how to generate typed resource options from CRDs (both plain YAML files and a Helm chart), so that we can define and override <code>CiliumNetworkPolicies</code>, cert-manager's <code>Certificates</code>

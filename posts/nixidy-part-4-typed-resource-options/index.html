@@ -240,6 +240,53 @@ cp<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </spa
 						would be an unrecognized attribute, and the resource would have to be included via <code>yamls</code>
 						or <code>extraRawYamls</code>
 						without type checking.</p>
+					<p>Now if we build the dev environment and look at the generated <code>CiliumNetworkPolicy</code>.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns.yaml
+</code></pre></div>
+					<p>It should show you the generated manifest like below.</p>
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">cilium.io/v2</span>
+<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">CiliumNetworkPolicy</span>
+<span style="color: #8EC07C; font-weight: bold">metadata</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">allow-dns</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">kube-system</span>
+<span style="color: #8EC07C; font-weight: bold">spec</span>:
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">egress</span>:
+<span style="color: #EBDBB2">    </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">toEndpoints</span>:
+<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">matchLabels</span>:
+<span style="color: #EBDBB2">            </span><span style="color: #8EC07C; font-weight: bold">k8s:io.kubernetes.pod.namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">kube-system</span>
+<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">toPorts</span>:
+<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">ports</span>:
+<span style="color: #EBDBB2">            </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">port</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;53&quot;</span>
+<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">protocol</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">UDP</span>
+<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">endpointSelector</span>:<span style="color: #EBDBB2"> </span>{}
+</code></pre></div>
+					<div class="admonition tip">
+						<p class="admonition-title"><strong>Coming in v0.20.0</strong>
+						(but already available on <code>main</code>)</p>
+						<p><code>fromCRD</code>
+						generates a file you build, copy, and import. The module accessor <code>fromCRDModule</code>
+						returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the <code>generators</code>
+						argument in nixidy modules:</p>
+						<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ generators, <span style="color: #8EC07C">...</span> }:
+{
+  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">applicationImports</span> <span style="color: #8EC07C">=</span> [
+    (generators<span style="color: #8EC07C">.</span>fromCRDModule {
+      <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
+      <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub {
+        <span style="color: #D3869B">owner</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
+        <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
+        <span style="color: #D3869B">rev</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.15.6&quot;</span>;
+        <span style="color: #D3869B">hash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span>;
+      };
+      <span style="color: #D3869B">crdFiles</span> <span style="color: #8EC07C">=</span> [
+        <span style="color: #B8BB26">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
+      ];
+    })
+  ];
+}
+</code></pre></div>
+					</div>
 					<h2 id="generating-types-from-helm-chart-crds">Generating types from Helm chart CRDs</h2>
 					<p>Some CRDs are only available inside Helm charts, or it's preferable to keep them in sync with the chart version you're deploying. The <a href="https://nixidy.dev/user_guide/typed_resources/"><code>fromChartCRD</code></a>
 						generator handles this: it templates the Helm chart, extracts CRDs from the rendered output, and generates typed options.</p>
@@ -264,6 +311,30 @@ cp<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </spa
 						<p><code>fromChartCRD</code>
 						also handles CRDs that contain Helm templating within their definitions, something <code>fromCRD</code>
 						can't process because it reads raw YAML from the source tree rather than rendering a chart.</p>
+					</div>
+					<div class="admonition tip">
+						<p class="admonition-title"><strong>Coming in v0.20.0</strong>
+						(but already available on <code>main</code>)</p>
+						<p>Like <code>fromCRD</code>
+							has <code>fromCRDModule</code>, <code>fromChartCRD</code>
+							has <code>fromChartCRDModule</code>
+							which also returns a module value instead of a generated file:</p>
+						<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ generators, <span style="color: #8EC07C">...</span> }:
+{
+  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">applicationImports</span> <span style="color: #8EC07C">=</span> [
+    (generators<span style="color: #8EC07C">.</span>fromChartCRDModule {
+      <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
+      <span style="color: #D3869B">chartAttrs</span> <span style="color: #8EC07C">=</span> {
+        <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://charts.jetstack.io&quot;</span>;
+        <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
+        <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.19.1&quot;</span>;
+        <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span>;
+      };
+      <span style="color: #D3869B">kindFilter</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;Certificate&quot;</span> ];
+    })
+  ];
+}
+</code></pre></div>
 					</div>
 					<h2 id="resolving-naming-conflicts">Resolving naming conflicts</h2>
 					<p>Two operators might define a CRD with the same <code>kind</code>, two different <code>Database</code>

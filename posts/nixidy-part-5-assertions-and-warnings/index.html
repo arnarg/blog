@@ -229,7 +229,7 @@
                   <span style="color: #CC241D">in</span>
                     lib<span style="color: #8EC07C">.</span>all
                       (c: c<span style="color: #8EC07C">.</span>resources <span style="color: #8EC07C">?</span> limits <span style="color: #8EC07C">&amp;&amp;</span> c<span style="color: #8EC07C">.</span>resources <span style="color: #8EC07C">?</span> requests)
-                      (lib<span style="color: #8EC07C">.</span>attrValues containers))
+                      containers)
                 (lib<span style="color: #8EC07C">.</span>attrValues deploys))
           (lib<span style="color: #8EC07C">.</span>attrValues config<span style="color: #8EC07C">.</span>applications);
       <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;All containers in all deployments must have resource requests and limits set&quot;</span>;
