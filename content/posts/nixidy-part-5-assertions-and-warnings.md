@@ -210,7 +210,7 @@ The real power of assertions is encoding organizational policy as build-time che
                   in
                     lib.all
                       (c: c.resources ? limits && c.resources ? requests)
-                      (lib.attrValues containers))
+                      containers)
                 (lib.attrValues deploys))
           (lib.attrValues config.applications);
       message = "All containers in all deployments must have resource requests and limits set";

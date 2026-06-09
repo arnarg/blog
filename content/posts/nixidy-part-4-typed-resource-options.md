@@ -179,6 +179,33 @@ Now the Cilium network policy resource is available with full type safety. Let's
 
 The `resources.ciliumNetworkPolicies` path (the alias for the generated CRD type) only exists because `generated/cilium.nix` was imported via `nixidy.applicationImports`. Without it, `ciliumNetworkPolicies` would be an unrecognized attribute, and the resource would have to be included via `yamls` or `extraRawYamls` without type checking.
 
+Now if we build the dev environment and look at the generated `CiliumNetworkPolicy`.
+
+```bash
+nix run github:arnarg/nixidy -- build .#dev
+cat result/network-policies/CiliumNetworkPolicy-allow-dns.yaml
+```
+
+It should show you the generated manifest like below.
+
+```yaml
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: kube-system
+spec:
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+  endpointSelector: {}
+```
+
 ## Generating types from Helm chart CRDs
 
 Some CRDs are only available inside Helm charts, or it's preferable to keep them in sync with the chart version you're deploying. The [`fromChartCRD`](https://nixidy.dev/user_guide/typed_resources/) generator handles this: it templates the Helm chart, extracts CRDs from the rendered output, and generates typed options.

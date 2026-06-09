@@ -188,6 +188,28 @@ modules = [
 ];
 ```
 
+Then let's build the dev environment and review the output.
+
+```bash
+nix run github:arnarg/nixidy -- build .#dev
+tree result -l
+```
+
+It should show that the `frontend` and `api` resources were generated.
+
+```
+result
+├── api
+│   ├── Deployment-api.yaml
+│   ├── Namespace-api.yaml
+│   └── Service-api.yaml
+└── frontend
+    ├── Deployment-frontend.yaml
+    ├── Ingress-frontend.yaml
+    ├── Namespace-frontend.yaml
+    └── Service-frontend.yaml
+```
+
 ## Patching template-generated resources
 
 Template output is regular nixidy resources and I can override individual fields the same way I'd override a shared module. If the frontend needs a memory limit that the template doesn't expose as an option:
@@ -212,6 +234,46 @@ applications.frontend = {
 ```
 
 The template generates the Deployment. The `resources.deployments.frontend` block merges with the generated output and adds resource limits without touching the template.
+
+Now if we build the dev environment and look at the `frontend` deployment.
+
+```bash
+nix run github:arnarg/nixidy -- build .#dev
+cat result/frontend/Deployment-frontend.yaml
+```
+
+It should show you a `Deployment` with resource requests and limits added.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: frontend
+      app.kubernetes.io/name: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: frontend
+        app.kubernetes.io/name: frontend
+    spec:
+      containers:
+        - image: frontend:v1.2.3
+          name: frontend
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 64Mi
+```
 
 ## What's next
 
