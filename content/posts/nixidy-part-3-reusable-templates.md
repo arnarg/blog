@@ -9,6 +9,9 @@ tags:
   - tutorial
 series:
   - nixidy
+ai:
+  type: Copyediting
+  model: GLM-5.1
 ---
 
 The third time I write a Deployment + Service + Ingress trio I start to notice the shape: selector labels that match the pod template labels, a service port that mirrors the container port, an ingress that references the service by name. Every field is wired to every other field, and a typo in one label breaks the chain silently. By the fifth web application I'm copying an existing module and changing five values and hoping I changed all five.

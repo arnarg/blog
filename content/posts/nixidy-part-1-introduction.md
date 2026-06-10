@@ -9,6 +9,9 @@ tags:
   - tutorial
 series:
   - nixidy
+ai:
+  type: Copyediting
+  model: GLM-5.1
 ---
 
 I have managed many GitOps repositories for Kubernetes with ArgoCD and I'm sure I'm not alone in having opened a Helm values override file that was 600 lines of YAML and still not being sure which values actually made it into the rendered manifests. I've run `helm template`, piped it through `grep`, given up, committed it anyway and hoped the staging diff would catch anything my eyes missed.

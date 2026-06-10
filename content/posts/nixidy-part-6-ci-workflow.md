@@ -9,6 +9,9 @@ tags:
   - tutorial
 series:
   - nixidy
+ai:
+  type: Copyediting
+  model: GLM-5.1
 ---
 
 Every change we've made so far has been local: edit a Nix file, run `nixidy build`, inspect `result/`, run `nixidy switch` to copy manifests into the repo, commit, push. That workflow works for one person. It breaks the moment a second person needs to review what's being deployed, because they see a Nix diff, not a YAML diff, and they have to trust that `nixidy build` produces what they expect.

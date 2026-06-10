@@ -9,6 +9,9 @@ tags:
   - tutorial
 series:
   - nixidy
+ai:
+  type: Copyediting
+  model: GLM-5.1
 ---
 
 In [the previous part](/posts/nixidy-part-1-introduction/) we created a single nixidy application. The nginx `Deployment` in `dev.nix` is 20 lines. When I add `staging.nix` and `prod.nix` I'll have three copies of those 20 lines, and they'll be identical except for `replicas` and maybe an annotation or two. Change the container port in one, forget it in another, and I've got a silent divergence that no CI check will catch.

@@ -75,3 +75,55 @@ pre[class*="language-"] {
   }
 }
 
+.tooltip {
+  @apply relative inline-block cursor-pointer;
+}
+
+.tooltip[data-tip]::before {
+  content: attr(data-tip);
+
+  @apply absolute top-1/2 z-10;
+  left: calc(100% + 0.5rem);
+  transform: translateY(-50%);
+
+  @apply w-max max-w-xs px-2 py-1 rounded-md;
+  @apply text-sm leading-tight text-center;
+  @apply text-stone-900 dark:text-stone-100 break-words;
+  @apply font-bold;
+  @apply bg-stone-100 dark:bg-stone-800;
+
+  @apply opacity-0 pointer-events-none;
+
+  @apply transition-all duration-200 ease-out;
+  transition-delay: 75ms;
+
+  /* Slide rightward into view */
+  --tt-pos: -0.25rem;
+  transform: translateY(-50%) translateX(var(--tt-pos));
+}
+
+.tooltip[data-tip]:hover::before,
+.tooltip[data-tip]:focus-visible::before {
+  @apply opacity-100;
+  --tt-pos: 0rem;
+  transition-delay: 0s;
+}
+
+.tooltip[data-tip]::after {
+  content: "";
+  @apply absolute top-1/2;
+  left: calc(100% + 0.25rem);
+  transform: translateY(-50%);
+  width: 0.25rem;
+  height: 0.625rem;
+  @apply bg-stone-100 dark:bg-stone-800 opacity-0 pointer-events-none;
+  clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+  @apply transition-opacity duration-200 ease-out;
+  transition-delay: 75ms;
+}
+
+.tooltip[data-tip]:hover::after {
+  @apply opacity-100;
+  transition-delay: 0s;
+}
+

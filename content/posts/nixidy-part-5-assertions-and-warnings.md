@@ -9,6 +9,9 @@ tags:
   - tutorial
 series:
   - nixidy
+ai:
+  type: Copyediting
+  model: GLM-5.1
 ---
 
 Type checking catches the wrong shape of data: a string where an integer belongs, a missing required field. But it can't catch semantic errors like a production Deployment with zero replicas, a namespace that isn't being created, or two applications that must always be deployed together. These are invariants about the cluster configuration that no schema can express.

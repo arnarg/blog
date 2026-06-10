@@ -9,6 +9,9 @@ tags:
   - tutorial
 series:
   - nixidy
+ai:
+  type: Copyediting
+  model: GLM-5.1
 ---
 
 Every Kubernetes resource we've defined so far (Deployments, Services, Ingresses, Namespaces, ConfigMaps) has been typed. We didn't install anything extra to make that happen, nixidy ships with typed options for all core Kubernetes resources, generated from the official JSON schemas. When I write `replicas = 3`, the module system checks that `3` is an integer. When I write `replicas = "three"`, the build fails with a type error naming the exact option and the type it expected.

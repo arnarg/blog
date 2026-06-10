@@ -26,6 +26,7 @@ let
     p
     section
     strong
+    span
     ;
 in
 {
@@ -70,6 +71,28 @@ in
 
     page =
       { metadata, content, ... }:
+      let
+        sparkles =
+          if metadata ? ai && metadata.ai ? type && metadata.ai ? model then
+            (span
+              [
+                (attrs.classes [
+                  "h-6"
+                  "w-6"
+                  "mx-1"
+                  "align-middle"
+                  "text-yellow-500"
+                  "tooltip"
+                ])
+                (attrs.data "tip" "${metadata.ai.type} (${metadata.ai.model})")
+              ]
+              [
+                (builtins.readFile ./static/images/sparkles.svg)
+              ]
+            )
+          else
+            "";
+      in
       main
         [ ]
         [
@@ -87,6 +110,7 @@ in
                 ]
                 [
                   "Posted on ${metadata.date}"
+                  sparkles
                 ]
               )
               (div
