@@ -182,7 +182,7 @@ resources.&quot;networking.k8s.io&quot;.v1.Ingress
             <span style="color: #D3869B">rev</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.15.6&quot;</span>;
             <span style="color: #D3869B">hash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span>;
           };
-          <span style="color: #D3869B">crds</span> <span style="color: #8EC07C">=</span> [
+          <span style="color: #D3869B">crdFiles</span> <span style="color: #8EC07C">=</span> [
             <span style="color: #B8BB26">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
           ];
         };
@@ -262,8 +262,7 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
 <span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">endpointSelector</span>:<span style="color: #EBDBB2"> </span>{}
 </code></pre></div>
 					<div class="admonition tip">
-						<p class="admonition-title"><strong>Coming in v0.20.0</strong>
-						(but already available on <code>main</code>)</p>
+						<p class="admonition-title"><strong>Available in v0.20.0</strong></p>
 						<p><code>fromCRD</code>
 						generates a file you build, copy, and import. The module accessor <code>fromCRDModule</code>
 						returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the <code>generators</code>
@@ -301,7 +300,7 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
       <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.19.1&quot;</span>;
       <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span>;
     };
-    <span style="color: #D3869B">crds</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;Certificate&quot;</span> ];
+    <span style="color: #D3869B">kindFilter</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;Certificate&quot;</span> ];
   };
 </code></pre></div>
 					<p>The workflow is the same: <code>nix build .#generators.cert-manager</code>, copy the output into <code>generated/</code>, and register via <code>nixidy.applicationImports</code>. The <code>crds</code>
@@ -313,8 +312,7 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
 						can't process because it reads raw YAML from the source tree rather than rendering a chart.</p>
 					</div>
 					<div class="admonition tip">
-						<p class="admonition-title"><strong>Coming in v0.20.0</strong>
-						(but already available on <code>main</code>)</p>
+						<p class="admonition-title"><strong>Available in v0.20.0</strong></p>
 						<p>Like <code>fromCRD</code>
 							has <code>fromCRDModule</code>, <code>fromChartCRD</code>
 							has <code>fromChartCRDModule</code>
@@ -369,7 +367,7 @@ generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">mysq
 					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">keycloak</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
   <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloak&quot;</span>;
   <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub { <span style="color: #928374; font-style: italic">/* ... */</span> };
-  <span style="color: #D3869B">crds</span> <span style="color: #8EC07C">=</span> [
+  <span style="color: #D3869B">crdFiles</span> <span style="color: #8EC07C">=</span> [
     <span style="color: #B8BB26">&quot;package/crds/authenticationflow.keycloak.crossplane.io_bindings.yaml&quot;</span>
     <span style="color: #B8BB26">&quot;package/crds/group.keycloak.crossplane.io_groups.yaml&quot;</span>
     <span style="color: #B8BB26">&quot;package/crds/user.keycloak.crossplane.io_groups.yaml&quot;</span>
