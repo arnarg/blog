@@ -117,7 +117,7 @@ Let's generate types for Cilium's `CiliumNetworkPolicy`. Let's add the generator
             rev = "v1.15.6";
             hash = "sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=";
           };
-          crds = [
+          crdFiles = [
             "pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml"
           ];
         };
@@ -206,7 +206,7 @@ spec:
   endpointSelector: {}
 ```
 
-/// admonition | **Coming in v0.20.0** (but already available on `main`)
+/// admonition | **Available in v0.20.0**
     type: tip
 
 `fromCRD` generates a file you build, copy, and import. The module accessor `fromCRDModule` returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the `generators` argument in nixidy modules:
@@ -248,7 +248,7 @@ packages.generators.cert-manager =
       version = "v1.19.1";
       chartHash = "sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=";
     };
-    crds = [ "Certificate" ];
+    kindFilter = [ "Certificate" ];
   };
 ```
 
@@ -260,7 +260,7 @@ The workflow is the same: `nix build .#generators.cert-manager`, copy the output
 `fromChartCRD` also handles CRDs that contain Helm templating within their definitions, something `fromCRD` can't process because it reads raw YAML from the source tree rather than rendering a chart.
 ///
 
-/// admonition | **Coming in v0.20.0** (but already available on `main`)
+/// admonition | **Available in v0.20.0**
     type: tip
 
 Like `fromCRD` has `fromCRDModule`, `fromChartCRD` has `fromChartCRDModule` which also returns a module value instead of a generated file:
@@ -314,7 +314,7 @@ The key on the left side is not the CRD's `kind`, it's the plural name followed 
 generators.keycloak = nixidy.packages.${system}.generators.fromCRD {
   name = "keycloak";
   src = pkgs.fetchFromGitHub { /* ... */ };
-  crds = [
+  crdFiles = [
     "package/crds/authenticationflow.keycloak.crossplane.io_bindings.yaml"
     "package/crds/group.keycloak.crossplane.io_groups.yaml"
     "package/crds/user.keycloak.crossplane.io_groups.yaml"
