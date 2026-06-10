@@ -81,7 +81,7 @@ Let's generate types for Cilium's `CiliumNetworkPolicy`. Let's add the generator
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    nixidy.url = "github:arnarg/nixidy";
+    nixidy.url = "github:arnarg/nixidy/latest";
   };
 
   outputs = {
@@ -182,7 +182,7 @@ The `resources.ciliumNetworkPolicies` path (the alias for the generated CRD type
 Now if we build the dev environment and look at the generated `CiliumNetworkPolicy`.
 
 ```bash
-nix run github:arnarg/nixidy -- build .#dev
+nix run github:arnarg/nixidy/latest -- build .#dev
 cat result/network-policies/CiliumNetworkPolicy-allow-dns.yaml
 ```
 

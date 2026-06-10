@@ -121,7 +121,7 @@ The promotion workflow above uses the monorepo strategy with a PR gate. The same
 Before promoting from staging to production it's useful to see what's different. Not the Nix source, the rendered YAML. `nixidy diff` compares two build outputs:
 
 ```bash
-nix run github:arnarg/nixidy -- diff .#staging --env .#prod
+nix run github:arnarg/nixidy/latest -- diff .#staging --env .#prod
 ```
 
 This builds both environments and prints the diff of their rendered manifests. The output shows exactly which fields change between staging and production: replicas, resource limits, sync policies, image tags.
@@ -129,7 +129,7 @@ This builds both environments and prints the diff of their rendered manifests. T
 Compare against the manifests already in your repository:
 
 ```bash
-nix run github:arnarg/nixidy -- diff .#dev --path manifests/dev
+nix run github:arnarg/nixidy/latest -- diff .#dev --path manifests/dev
 ```
 
 This builds `.#dev` and compares it against the YAML already committed in `manifests/dev/`. If the output is empty, nothing changed and the local Nix edits don't affect the rendered manifests. If it shows changes, those are the exact diffs that will appear in the promotion PR.

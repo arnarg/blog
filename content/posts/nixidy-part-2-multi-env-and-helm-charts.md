@@ -78,7 +78,7 @@ Now I need to update `flake.nix` to pull in the shared module via `mkEnvs`'s `mo
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    nixidy.url = "github:arnarg/nixidy";
+    nixidy.url = "github:arnarg/nixidy/latest";
   };
 
   outputs = {
@@ -114,7 +114,7 @@ Then I can rewrite `env/dev.nix` (no import needed, since `flake.nix` already ha
 Let's build the dev environment:
 
 ```bash
-nix run github:arnarg/nixidy -- build .#dev
+nix run github:arnarg/nixidy/latest -- build .#dev
 tree result
 ```
 
@@ -152,7 +152,7 @@ The plain assignment `replicas = 3` has priority `100`, which beats `mkDefault`'
 Let's build it:
 
 ```bash
-nix run github:arnarg/nixidy -- build .#staging
+nix run github:arnarg/nixidy/latest -- build .#staging
 cat result/nginx/Deployment-nginx.yaml | grep replicas
 ```
 

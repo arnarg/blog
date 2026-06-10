@@ -87,7 +87,7 @@ applications.nginx.resources.deployments.nginx.spec.replicas = 0;
 Build:
 
 ```bash
-nix run github:arnarg/nixidy -- build .#dev
+nix run github:arnarg/nixidy/latest -- build .#dev
 ```
 
 Expected output:

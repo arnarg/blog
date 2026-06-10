@@ -57,7 +57,7 @@ Now create `flake.nix`, this is the entry point that wires nixidy into your Nix 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    nixidy.url = "github:arnarg/nixidy";
+    nixidy.url = "github:arnarg/nixidy/latest";
   };
 
   outputs = {
@@ -153,7 +153,7 @@ Two reasons.
 Run the build:
 
 ```bash
-nix run github:arnarg/nixidy -- build .#dev
+nix run github:arnarg/nixidy/latest -- build .#dev
 ```
 
 /// admonition | info
@@ -240,7 +240,7 @@ Every `applications.*` block produces exactly one Argo CD `Application` pointing
 The `nixidy switch` command copies the built manifests into your repository at the `rootPath` you configured:
 
 ```bash
-nix run github:arnarg/nixidy -- switch .#dev
+nix run github:arnarg/nixidy/latest -- switch .#dev
 ```
 
 This creates `./manifests/dev/` with the same directory tree as `result/`. Commit and push:
@@ -260,7 +260,7 @@ The rendered YAML is now in your repository. Argo CD can see it.
 If Argo CD is already running in your cluster, one command creates an "app of apps" (a parent `Application` that manages all your nixidy applications):
 
 ```bash
-nix run github:arnarg/nixidy -- bootstrap .#dev | kubectl apply -f -
+nix run github:arnarg/nixidy/latest -- bootstrap .#dev | kubectl apply -f -
 ```
 
 This outputs an Argo CD `Application` manifest that points at `manifests/dev/apps/` in your repo. Argo CD reads that directory, discovers `Application-nginx.yaml`, creates the nginx `Application`, which then syncs the Deployment, Service, and Namespace into your cluster.
@@ -270,7 +270,7 @@ This outputs an Argo CD `Application` manifest that points at `manifests/dev/app
 If you want to skip Argo CD temporarily, a local `kind` cluster for instance:
 
 ```bash
-nix run github:arnarg/nixidy -- apply .#dev
+nix run github:arnarg/nixidy/latest -- apply .#dev
 ```
 
 This runs `kubectl apply --prune` with the correct label selectors, so resources removed from your nixidy config are also removed from the cluster on the next apply (if resources have been removed).

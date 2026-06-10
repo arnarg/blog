@@ -191,7 +191,7 @@ modules = [
 Then let's build the dev environment and review the output.
 
 ```bash
-nix run github:arnarg/nixidy -- build .#dev
+nix run github:arnarg/nixidy/latest -- build .#dev
 tree result -l
 ```
 
@@ -238,7 +238,7 @@ The template generates the Deployment. The `resources.deployments.frontend` bloc
 Now if we build the dev environment and look at the `frontend` deployment.
 
 ```bash
-nix run github:arnarg/nixidy -- build .#dev
+nix run github:arnarg/nixidy/latest -- build .#dev
 cat result/frontend/Deployment-frontend.yaml
 ```
 
