@@ -251,7 +251,7 @@
 ];
 </code></pre></div>
 					<p>Then let's build the dev environment and review the output.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
 tree<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </span>-l
 </code></pre></div>
 					<p>It should show that the <code>frontend</code>
@@ -291,7 +291,7 @@ tree<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </s
 						block merges with the generated output and adds resource limits without touching the template.</p>
 					<p>Now if we build the dev environment and look at the <code>frontend</code>
 						deployment.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
 cat<span style="color: #EBDBB2"> </span>result/frontend/Deployment-frontend.yaml
 </code></pre></div>
 					<p>It should show you a <code>Deployment</code>

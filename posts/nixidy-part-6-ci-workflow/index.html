@@ -176,11 +176,11 @@
 					<h2 id="comparing-environments-with-nixidy-diff">Comparing environments with nixidy diff</h2>
 					<p>Before promoting from staging to production it's useful to see what's different. Not the Nix source, the rendered YAML. <code>nixidy diff</code>
 						compares two build outputs:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#staging<span style="color: #EBDBB2"> </span>--env<span style="color: #EBDBB2"> </span>.#prod
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#staging<span style="color: #EBDBB2"> </span>--env<span style="color: #EBDBB2"> </span>.#prod
 </code></pre></div>
 					<p>This builds both environments and prints the diff of their rendered manifests. The output shows exactly which fields change between staging and production: replicas, resource limits, sync policies, image tags.</p>
 					<p>Compare against the manifests already in your repository:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>--path<span style="color: #EBDBB2"> </span>manifests/dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>--path<span style="color: #EBDBB2"> </span>manifests/dev
 </code></pre></div>
 					<p>This builds <code>.#dev</code>
 						and compares it against the YAML already committed in <code>manifests/dev/</code>. If the output is empty, nothing changed and the local Nix edits don't affect the rendered manifests. If it shows changes, those are the exact diffs that will appear in the promotion PR.</p>

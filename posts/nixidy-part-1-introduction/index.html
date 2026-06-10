@@ -104,7 +104,7 @@ git<span style="color: #EBDBB2"> </span>init
   <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
     nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
     flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
-    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy&quot;</span>;
+    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy/latest&quot;</span>;
   };
 
   <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
@@ -197,7 +197,7 @@ git<span style="color: #EBDBB2"> </span>init
 					</div>
 					<h2 id="build-the-manifests">Build the manifests</h2>
 					<p>Run the build:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
 </code></pre></div>
 					<div class="admonition info">
 						<p class="admonition-title">info</p>
@@ -266,7 +266,7 @@ git<span style="color: #EBDBB2"> </span>init
 					<p>The <code>nixidy switch</code>
 						command copies the built manifests into your repository at the <code>rootPath</code>
 						you configured:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>switch<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>switch<span style="color: #EBDBB2"> </span>.#dev
 </code></pre></div>
 					<p>This creates <code>./manifests/dev/</code>
 						with the same directory tree as <code>result/</code>. Commit and push:</p>
@@ -279,7 +279,7 @@ git<span style="color: #EBDBB2"> </span>push
 					<h3 id="bootstrap-with-argo-cd">Bootstrap with Argo CD</h3>
 					<p>If Argo CD is already running in your cluster, one command creates an "app of apps" (a parent <code>Application</code>
 						that manages all your nixidy applications):</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>bootstrap<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>kubectl<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>-f<span style="color: #EBDBB2"> </span>-
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>bootstrap<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>kubectl<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>-f<span style="color: #EBDBB2"> </span>-
 </code></pre></div>
 					<p>This outputs an Argo CD <code>Application</code>
 						manifest that points at <code>manifests/dev/apps/</code>
@@ -287,7 +287,7 @@ git<span style="color: #EBDBB2"> </span>push
 					<h3 id="or-apply-directly-for-testing">Or: apply directly (for testing)</h3>
 					<p>If you want to skip Argo CD temporarily, a local <code>kind</code>
 						cluster for instance:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>.#dev
 </code></pre></div>
 					<p>This runs <code>kubectl apply --prune</code>
 						with the correct label selectors, so resources removed from your nixidy config are also removed from the cluster on the next apply (if resources have been removed).</p>

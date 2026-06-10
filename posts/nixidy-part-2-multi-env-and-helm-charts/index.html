@@ -125,7 +125,7 @@
   <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
     nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
     flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
-    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy&quot;</span>;
+    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy/latest&quot;</span>;
   };
 
   <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
@@ -159,7 +159,7 @@
 }
 </code></pre></div>
 					<p>Let's build the dev environment:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
 tree<span style="color: #EBDBB2"> </span>result
 </code></pre></div>
 					<p>The output is identical to <a href="/posts/nixidy-part-1-introduction/">Part 1</a>
@@ -189,7 +189,7 @@ tree<span style="color: #EBDBB2"> </span>result
 					<p>The plain assignment <code>replicas = 3</code>
 						has priority <code>100</code>, which beats <code>mkDefault</code>'s <code>1000</code>. Staging gets 3 replicas and a single line expresses that.</p>
 					<p>Let's build it:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#staging
+					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#staging
 cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>grep<span style="color: #EBDBB2"> </span>replicas
 </code></pre></div>
 					<p>You should see <code>replicas: 3</code>.</p>
