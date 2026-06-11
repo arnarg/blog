@@ -17,6 +17,10 @@ article {
 	       hover:prose-a:text-sky-900
 	       dark:prose-a:text-sky-300
 	       dark:hover:prose-a:text-sky-500;
+
+  figure > figcaption {
+    @apply text-center;
+  }
 }
 
 div[class="highlight"] {

@@ -38,7 +38,10 @@ So when I was researching my options I noticed that the GPIO header on the board
 I'm no electrical engineer but I have dabbled with microcontrollers in the past and I have played with designing a PCB exactly once before many years ago so I was pretty clueless going into this. As an extra challenge it had to be quite compact as I have the aluminum case that everything needs to fit into, which doesn't allow for much room.
 
 ![NanoPI R4S metal case](/images/posts/nanopi-r4s-spi-flash/nanopi-r4s-case.jpg)
+
+/// caption
 [Image source](https://www.friendlyelec.com/index.php?route=product/product&product_id=284)
+///
 
 The PCB is 66x66mm (66mm == 2.598425 inches) for reference.
 
@@ -48,7 +51,9 @@ Normal female pin headers mount on top of the pin headers of the SBC (think of a
 
 ![NanoPI R4S flash PCB side profile](/images/posts/nanopi-r4s-spi-flash/nanopi-r4s-flash-board-profile.jpg)
 
+/// caption
 Look how low profile that is!
+///
 
 When it comes to the actual schematic and PCB design, there's not much to it. Just the NOR flash chip itself, a decoupling capacitor and a dip switch for enabling write protection and hold functionality, along with some pull-up resistors. I have released the kicad project files and gerbers on [GitHub](https://github.com/arnarg/nanopi-r4s-spi-flash-board/).
 

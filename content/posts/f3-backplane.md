@@ -33,7 +33,9 @@ I found some great pictures from this [review of Terramaster F5-422](https://www
 
 ![Picture of the PCIe pinout.](/images/posts/f3-backplane/f3-connector-backside.jpg)
 
+/// caption
 Quite a few differential pairs can be seen in this picture.
+///
 
 ### PCI Express
 
@@ -113,7 +115,9 @@ I sent my design to JLCPCB, ordered a 4-layer PCB and a couple of weeks later I 
 
 ![Picture of partially assembled prototype PCB on the mounting rails for the case.](/images/posts/f3-backplane/f3-backplane-prototype.jpg)
 
+/// caption
 It's a bit of a weird shape because of the buck converter on the top right but look at how perfectly the SSD fits!
+///
 
 ### Testing the prototype PCB
 

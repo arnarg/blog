@@ -72,26 +72,19 @@ in
     page =
       { metadata, content, ... }:
       let
-        sparkles =
+        aiInfo =
           if metadata ? ai && metadata.ai ? type && metadata.ai ? model then
-            (span
-              [
-                (attrs.classes [
-                  "h-6"
-                  "w-6"
-                  "mx-1"
-                  "align-middle"
-                  "text-yellow-500"
-                  "tooltip"
-                ])
-                (attrs.data "tip" "${metadata.ai.type} (${metadata.ai.model})")
-              ]
-              [
-                (builtins.readFile ./static/images/sparkles.svg)
-              ]
-            )
+            {
+              svg = builtins.readFile ./icons/sparkles.svg;
+              tip = "${metadata.ai.type} (${metadata.ai.model})";
+              color = "text-yellow-500";
+            }
           else
-            "";
+            {
+              svg = builtins.readFile ./icons/brain.svg;
+              tip = "No AI assistance";
+              color = "text-red-400";
+            };
       in
       main
         [ ]
@@ -110,7 +103,22 @@ in
                 ]
                 [
                   "Posted on ${metadata.date}"
-                  sparkles
+                  (span
+                    [
+                      (attrs.classes [
+                        "h-5"
+                        "w-5"
+                        "mx-1"
+                        "align-middle"
+                        "tooltip"
+                        aiInfo.color
+                      ])
+                      (attrs.data "tip" aiInfo.tip)
+                    ]
+                    [
+                      aiInfo.svg
+                    ]
+                  )
                 ]
               )
               (div
