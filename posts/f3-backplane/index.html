@@ -37,6 +37,9 @@
 					</h1>
 					<div class="mb-2 text-stone-900 dark:text-stone-200">
 						Posted on Apr 26, 2024
+						<span class="h-5 w-5 mx-1 align-middle tooltip text-red-400" data-tip="No AI assistance">
+							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-brain"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15.5 13a3.5 3.5 0 0 0 -3.5 3.5v1a3.5 3.5 0 0 0 7 0v-1.8"/><path d="M8.5 13a3.5 3.5 0 0 1 3.5 3.5v1a3.5 3.5 0 0 1 -7 0v-1.8"/><path d="M17.5 16a3.5 3.5 0 0 0 0 -7h-.5"/><path d="M19 9.3v-2.8a3.5 3.5 0 0 0 -7 0"/><path d="M6.5 16a3.5 3.5 0 0 1 0 -7h.5"/><path d="M5 9.3v-2.8a3.5 3.5 0 0 1 7 0v10"/></svg>
+						</span>
 					</div>
 					<div class="flex flex-row gap-4">
 						<a class="no-underline" href="/tags/nas">
@@ -63,8 +66,12 @@
 					<h2 id="reverse-engineering">Reverse engineering</h2>
 					<p>I found some great pictures from this <a href="https://www.techpowerup.com/review/terramaster-f5-422-5-bay-nas/4.html">review of Terramaster F5-422</a>
 						and from those pictures I could identify that they're using 2 ASMedia ASM1061 ICs to get the SATA port count from 2 to 5. After some research I found out that ASM1061 is a 1-lane PCIe gen 2 SATA controller with 2 SATA ports, the first one is wired to port 3 and 4 on the backplane and the second one is wired to port 5 only. This was potentially good news for me as this means that the PCIe connector on the motherboard should include 2 PCIe x1 interfaces and looking at the back of the motherboard on my Terramaster F2-221 I could see that the pins that seemed to carry the PCIe traces on the F5-422 backplane were indeed wired up and it makes sense that they didn't want to have to manufacture different motherboards for the different models.</p>
-					<p><img alt="Picture of the PCIe pinout." src="/images/posts/f3-backplane/f3-connector-backside.jpg"></p>
-					<p>Quite a few differential pairs can be seen in this picture.</p>
+					<figure>
+						<p><img alt="Picture of the PCIe pinout." src="/images/posts/f3-backplane/f3-connector-backside.jpg"></p>
+						<figcaption>
+							<p>Quite a few differential pairs can be seen in this picture.</p>
+						</figcaption>
+					</figure>
 					<h3 id="pci-express">PCI Express</h3>
 					<p>Some of the pictures were still a bit low resolution and I had to zoom in a lot and follow blurry traces but I could verify that the traces for the first 2 SATA ports matched the pins on my backplane PCB. Thankfully I could find a datasheet for ASM1061, and therefor had a pinout for the IC, so I knew which pins were the PCIe lines but all the differential pairs near the ICs and the PCIe connector went to vias and were then routed on internal layers which made it impossible for me to know for sure which differential pair was <code>TX</code>, <code>RX</code>
 						and <code>REFCLK</code>. I could however identify that one pin on the PCIe connector was connected to <code>PERST#</code>
@@ -282,8 +289,12 @@
 					<p>I first measured all different parts of the PCB using a ruler and calipers and then took a picture of the PCB as straight on as I possibly could and then tried to remove any lens distortion before importing the picture into Kicad and start positioning the PCIe connector, screw holes and the outline from the measurements and checking alignment with the picture. Then I made the schematic for the different components and layed them out on the PCB as best I could, but I wasn't <em>too</em>
 						careful about placement as I knew this was only a temporary prototype and added testpoints for various pins. I discovered the 3.3V rail on the PCIe connector pretty late in this process and therefor there is a buck converter taking 5V and converting it to 3.3V for the NVMe SSD.</p>
 					<p>I sent my design to JLCPCB, ordered a 4-layer PCB and a couple of weeks later I had this!</p>
-					<p><img alt="Picture of partially assembled prototype PCB on the mounting rails for the case." src="/images/posts/f3-backplane/f3-backplane-prototype.jpg"></p>
-					<p>It's a bit of a weird shape because of the buck converter on the top right but look at how perfectly the SSD fits!</p>
+					<figure>
+						<p><img alt="Picture of partially assembled prototype PCB on the mounting rails for the case." src="/images/posts/f3-backplane/f3-backplane-prototype.jpg"></p>
+						<figcaption>
+							<p>It's a bit of a weird shape because of the buck converter on the top right but look at how perfectly the SSD fits!</p>
+						</figcaption>
+					</figure>
 					<h3 id="testing-the-prototype-pcb">Testing the prototype PCB</h3>
 					<p>This was my first time soldering DFN packages and they're <strong><em>tiny</em></strong>! Because I don't have a microscope or anything to visually inspect my soldering and these components were mostly just handling power anyway I just checked for shorts between power and ground and tried to take close-ups using my phone to see if I could spot any shorts. The technique that ended up working well for me to solder on these DFN packages without a stencil is to put what can only be described as <em>way too much</em>
 						solder paste on the pads and then pushing the IC in the pool of solder, when the solder melts from the heat of my hot air station the IC will float on top and then I push down on it with tweezers and all excess solder will squeeze out and bead up, hopefully landing somewhere on the solder mask, where I can pick it up later once it's solid.</p>
