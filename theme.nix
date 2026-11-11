@@ -24,6 +24,7 @@ let
     main
     meta
     p
+    script
     section
     strong
     span
@@ -208,6 +209,10 @@ in
             (attrs.rel "stylesheet")
             (attrs.href "/css/main.css")
           ])
+          (script [
+            (attrs.src "/js/copy-code.js")
+            (lib.mkAttr "defer" "")
+          ] [ ])
           (meta [
             (attrs.httpEquiv "content-type")
             (attrs.content "text/html")

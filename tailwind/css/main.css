@@ -26,11 +26,41 @@ article {
 }
 
 div[class="highlight"] {
+	@apply relative;
 	border-radius: 6px;
 
 	& pre {
 		line-height: 125%;
 	}
+}
+
+.copy-code-button {
+	@apply absolute top-1.5 right-2 z-10
+	       inline-flex h-7 w-7 items-center justify-center p-1
+	       rounded border border-stone-600
+	       bg-stone-800/90 text-stone-200 shadow-sm
+	       cursor-pointer transition-colors duration-150
+	       hover:bg-stone-700 hover:text-white
+	       focus-visible:outline-none focus-visible:ring-2
+	       focus-visible:ring-sky-400 focus-visible:ring-offset-2
+	       focus-visible:ring-offset-stone-800
+	       disabled:cursor-wait disabled:opacity-70;
+}
+
+.copy-code-button[data-state="success"] {
+	@apply border-green-500 text-green-300;
+}
+
+.copy-code-button[data-state="error"] {
+	@apply border-red-500 text-red-300;
+}
+
+.copy-code-icon {
+	@apply h-4 w-4 shrink-0;
+}
+
+.copy-code-status {
+	@apply sr-only;
 }
 
 /* Line numbers rendered with pymdownx-inline style.
