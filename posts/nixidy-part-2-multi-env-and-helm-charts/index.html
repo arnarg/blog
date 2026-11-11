@@ -84,32 +84,32 @@
 					</ul>
 					<h2 id="refactor-the-nginx-application-into-a-shared-module">Refactor the nginx application into a shared module</h2>
 					<p>The nginx definition currently lives inline in <code>env/dev.nix</code>. Let's pull it out into its own module so every environment can import it. Create <code>modules/nginx.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-    <span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
-      deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkDefault <span style="color: #D3869B">2</span>;
-        selector<span style="color: #8EC07C">.</span>matchLabels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
-          metadata<span style="color: #8EC07C">.</span>labels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx:1.25.1&quot;</span>;
-            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
-          };
-        };
-      };
-
-      services<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-        ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
-      };
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>    <span class="ss">resources</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>      deployments<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 9 "></span>        <span class="ss">replicas</span> <span class="o">=</span> lib<span class="o">.</span>mkDefault <span class="mi">2</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>        selector<span class="o">.</span>matchLabels<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="11 "></span>        <span class="ss">template</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="12 "></span>          metadata<span class="o">.</span>labels<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="13 "></span>          spec<span class="o">.</span>containers<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="14 "></span>            <span class="ss">image</span> <span class="o">=</span> <span class="s2">&quot;nginx:1.25.1&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="15 "></span>            ports<span class="o">.</span>http<span class="o">.</span><span class="ss">containerPort</span> <span class="o">=</span> <span class="mi">80</span><span class="p">;</span>
+<span class="linenos" data-linenos="16 "></span>          <span class="p">};</span>
+<span class="linenos" data-linenos="17 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="18 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="19 "></span>
+<span class="linenos" data-linenos="20 "></span>      services<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="21 "></span>        selector<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="22 "></span>        ports<span class="o">.</span>http<span class="o">.</span><span class="ss">port</span> <span class="o">=</span> <span class="mi">80</span><span class="p">;</span>
+<span class="linenos" data-linenos="23 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="24 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="25 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="26 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>One change from <a href="/posts/nixidy-part-1-introduction/">Part 1</a>: <code>replicas = 2</code>
 						became <code>replicas = lib.mkDefault 2</code>. This sets the default priority, so any module that imports this one can override it with a plain assignment or with <code>lib.mkForce</code>.</p>
@@ -122,31 +122,31 @@
 					<p>Now I need to update <code>flake.nix</code>
 						to pull in the shared module via <code>mkEnvs</code>'s <code>modules</code>
 						list:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;My Kubernetes cluster managed with nixidy&quot;</span>;
-
-  <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
-    nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
-    flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
-    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy/latest&quot;</span>;
-  };
-
-  <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
-    nixpkgs,
-    flake-utils,
-    nixidy,
-    <span style="color: #8EC07C">...</span>
-  }:
-    flake-utils<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>eachDefaultSystem (system: <span style="color: #CC241D">let</span>
-      <span style="color: #D3869B">pkgs</span> <span style="color: #8EC07C">=</span> <span style="color: #FE8019">import</span> nixpkgs {<span style="color: #CC241D">inherit</span> system;};
-    <span style="color: #CC241D">in</span> {
-      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
-        <span style="color: #CC241D">inherit</span> pkgs;
-        <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./modules/nginx.nix</span> ];
-        envs<span style="color: #8EC07C">.</span>dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
-      };
-    });
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;My Kubernetes cluster managed with nixidy&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>
+<span class="linenos" data-linenos=" 4 "></span>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>    flake-utils<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/flake-utils&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>    nixidy<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:arnarg/nixidy/latest&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos=" 9 "></span>
+<span class="linenos" data-linenos="10 "></span>  <span class="ss">outputs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>    nixpkgs<span class="p">,</span>
+<span class="linenos" data-linenos="12 "></span>    flake-utils<span class="p">,</span>
+<span class="linenos" data-linenos="13 "></span>    nixidy<span class="p">,</span>
+<span class="linenos" data-linenos="14 "></span>    <span class="o">...</span>
+<span class="linenos" data-linenos="15 "></span>  <span class="p">}:</span>
+<span class="linenos" data-linenos="16 "></span>    flake-utils<span class="o">.</span>lib<span class="o">.</span>eachDefaultSystem <span class="p">(</span>system<span class="p">:</span> <span class="k">let</span>
+<span class="linenos" data-linenos="17 "></span>      <span class="ss">pkgs</span> <span class="o">=</span> <span class="nb">import</span> nixpkgs <span class="p">{</span><span class="k">inherit</span> system<span class="p">;};</span>
+<span class="linenos" data-linenos="18 "></span>    <span class="k">in</span> <span class="p">{</span>
+<span class="linenos" data-linenos="19 "></span>      <span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+<span class="linenos" data-linenos="20 "></span>        <span class="k">inherit</span> pkgs<span class="p">;</span>
+<span class="linenos" data-linenos="21 "></span>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./modules/nginx.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="22 "></span>        envs<span class="o">.</span>dev<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/dev.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="23 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="24 "></span>    <span class="p">});</span>
+<span class="linenos" data-linenos="25 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>The <code>modules</code>
 						list at the top level of <code>mkEnvs</code>
@@ -155,15 +155,15 @@
 					<p>Then I can rewrite <code>env/dev.nix</code>
 						(no import needed, since <code>flake.nix</code>
 						already handles it):</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/dev&quot;</span>;
-}
+					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/dev&quot;</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div>
 					<p>Let's build the dev environment:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
-tree<span style="color: #EBDBB2"> </span>result
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
+tree<span class="w"> </span>result
 </code></pre></div>
 					<p>The output is identical to <a href="/posts/nixidy-part-1-introduction/">Part 1</a>
 						(four files, same content). The module system merged the shared definition with the (empty) dev-specific overrides and produced the same result.</p>
@@ -171,55 +171,55 @@ tree<span style="color: #EBDBB2"> </span>result
 					<p>Now let's add a second environment. The shared modules list in <code>flake.nix</code>
 						already covers nginx, so <code>env/staging.nix</code>
 						only needs environment-specific config:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
-  <span style="color: #CC241D">inherit</span> pkgs;
-  <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./modules/nginx.nix</span> ];
-  <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
-    dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
-    staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
-  };
-};
+					<div class="highlight"><pre><span></span><code><span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+  <span class="k">inherit</span> pkgs<span class="p">;</span>
+  <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./modules/nginx.nix</span> <span class="p">];</span>
+  <span class="ss">envs</span> <span class="o">=</span> <span class="p">{</span>
+    dev<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/dev.nix</span> <span class="p">];</span>
+    staging<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/staging.nix</span> <span class="p">];</span>
+  <span class="p">};</span>
+<span class="p">};</span>
 </code></pre></div>
 					<p>Let's create <code>env/staging.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/staging&quot;</span>;
+					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/staging&quot;</span><span class="p">;</span>
 
-  applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span><span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3</span>;
-}
+  applications<span class="o">.</span>nginx<span class="o">.</span>resources<span class="o">.</span>deployments<span class="o">.</span>nginx<span class="o">.</span>spec<span class="o">.</span><span class="ss">replicas</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div>
 					<p>The plain assignment <code>replicas = 3</code>
 						has priority <code>100</code>, which beats <code>mkDefault</code>'s <code>1000</code>. Staging gets 3 replicas and a single line expresses that.</p>
 					<p>Let's build it:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#staging
-cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>grep<span style="color: #EBDBB2"> </span>replicas
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#staging
+cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>replicas
 </code></pre></div>
 					<p>You should see <code>replicas: 3</code>.</p>
 					<h2 id="a-production-environment-with-forced-overrides">A production environment with forced overrides</h2>
 					<p>Now let's create <code>env/prod.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/prod&quot;</span>;
-
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-    resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkForce <span style="color: #D3869B">10</span>;
-      template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
-        requests<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;128Mi&quot;</span>;
-        limits<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;256Mi&quot;</span>;
-      };
-    };
-
-    syncPolicy<span style="color: #8EC07C">.</span><span style="color: #D3869B">autoSync</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">enable</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-      <span style="color: #D3869B">prune</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-      <span style="color: #D3869B">selfHeal</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 4 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/prod&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>  applications<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>    resources<span class="o">.</span>deployments<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 9 "></span>      <span class="ss">replicas</span> <span class="o">=</span> lib<span class="o">.</span>mkForce <span class="mi">10</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>      template<span class="o">.</span>spec<span class="o">.</span>containers<span class="o">.</span>nginx<span class="o">.</span><span class="ss">resources</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>        requests<span class="o">.</span><span class="ss">memory</span> <span class="o">=</span> <span class="s2">&quot;128Mi&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="12 "></span>        limits<span class="o">.</span><span class="ss">memory</span> <span class="o">=</span> <span class="s2">&quot;256Mi&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="13 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="14 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="15 "></span>
+<span class="linenos" data-linenos="16 "></span>    syncPolicy<span class="o">.</span><span class="ss">autoSync</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="17 "></span>      <span class="ss">enable</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos="18 "></span>      <span class="ss">prune</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos="19 "></span>      <span class="ss">selfHeal</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos="20 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="21 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="22 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>There are two things happening here:</p>
 					<ul>
@@ -240,45 +240,45 @@ cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml<span 
 					</div>
 					<p>Let's update <code>flake.nix</code>
 						once more to include all three environments. I'll add the Traefik module to the shared list at the same time:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
-  <span style="color: #CC241D">inherit</span> pkgs;
-  <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
-    <span style="color: #B8BB26">./modules/nginx.nix</span>
-    <span style="color: #B8BB26">./modules/traefik.nix</span>
-  ];
-  <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
-    dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
-    staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
-    prod<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/prod.nix</span> ];
-  };
-};
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="k">inherit</span> pkgs<span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>  <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="l">./modules/nginx.nix</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="l">./modules/traefik.nix</span>
+<span class="linenos" data-linenos=" 6 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos=" 7 "></span>  <span class="ss">envs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>    dev<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/dev.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos=" 9 "></span>    staging<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/staging.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="10 "></span>    prod<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/prod.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="11 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="12 "></span><span class="p">};</span>
 </code></pre></div>
 					<h2 id="a-helm-chart-integrated-as-a-nixidy-application">A Helm chart integrated as a nixidy application</h2>
 					<p>Most Kubernetes software ships as Helm charts and refusing to use them means maintaining hundreds of lines of Kubernetes resources by hand. nixidy can render Helm charts at build time and make the output available as typed resources that can be patched.</p>
 					<p>Let's add Traefik as a second application. Create <code>modules/traefik.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">traefik</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;traefik&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-    helm<span style="color: #8EC07C">.</span>releases<span style="color: #8EC07C">.</span><span style="color: #D3869B">traefik</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>helm<span style="color: #8EC07C">.</span>downloadHelmChart {
-        <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://traefik.github.io/charts/&quot;</span>;
-        <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;traefik&quot;</span>;
-        <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;25.0.0&quot;</span>;
-        <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-ua8KnUB6MxY7APqrrzaKKSOLwSjDYkk9tfVkb1bqkVM=&quot;</span>;
-      };
-
-      <span style="color: #D3869B">values</span> <span style="color: #8EC07C">=</span> {
-        ingressClass<span style="color: #8EC07C">.</span><span style="color: #D3869B">enabled</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-      };
-    };
-
-    resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>traefik<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span>traefik<span style="color: #8EC07C">.</span><span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span>
-      lib<span style="color: #8EC07C">.</span>mkForce <span style="color: #B8BB26">&quot;traefik:v3.0.0&quot;</span>;
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">traefik</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;traefik&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>    helm<span class="o">.</span>releases<span class="o">.</span><span class="ss">traefik</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="ss">chart</span> <span class="o">=</span> lib<span class="o">.</span>helm<span class="o">.</span>downloadHelmChart <span class="p">{</span>
+<span class="linenos" data-linenos=" 9 "></span>        <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;https://traefik.github.io/charts/&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>        <span class="ss">chart</span> <span class="o">=</span> <span class="s2">&quot;traefik&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="11 "></span>        <span class="ss">version</span> <span class="o">=</span> <span class="s2">&quot;25.0.0&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="12 "></span>        <span class="ss">chartHash</span> <span class="o">=</span> <span class="s2">&quot;sha256-ua8KnUB6MxY7APqrrzaKKSOLwSjDYkk9tfVkb1bqkVM=&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="13 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="14 "></span>
+<span class="linenos" data-linenos="15 "></span>      <span class="ss">values</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="16 "></span>        ingressClass<span class="o">.</span><span class="ss">enabled</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos="17 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="18 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="19 "></span>
+<span class="linenos" data-linenos="20 "></span>    resources<span class="o">.</span>deployments<span class="o">.</span>traefik<span class="o">.</span>spec<span class="o">.</span>template<span class="o">.</span>spec<span class="o">.</span>containers<span class="o">.</span>traefik<span class="o">.</span><span class="ss">image</span> <span class="o">=</span>
+<span class="linenos" data-linenos="21 "></span>      lib<span class="o">.</span>mkForce <span class="s2">&quot;traefik:v3.0.0&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="22 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="23 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>Let me walk through the new pieces:</p>
 					<ul>
@@ -304,17 +304,17 @@ cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml<span 
 						list in <code>flake.nix</code>
 						already covers nginx and Traefik, so <code>env/dev.nix</code>
 						stays minimal:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/dev&quot;</span>;
-}
+					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/dev&quot;</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div>
 					<p>Every environment file is now just target configuration and environment-specific overrides. Adding a new shared module means one line in <code>flake.nix</code>
 						and not one line in every environment file.</p>
 					<h2 id="the-project-structure-so-far">The project structure so far</h2>
 					<p>After these changes the project looks like this:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>my-cluster/
+					<div class="highlight"><pre><span></span><code>my-cluster/
 ├── flake.nix
 ├── flake.lock
 ├── modules/

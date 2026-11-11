@@ -80,42 +80,42 @@
 					<p>An assertion is a boolean condition and a message. If the condition evaluates to <code>false</code>, the build fails and prints the message. Assertions live under <code>applications.&lt;name&gt;.assertions</code>.</p>
 					<p>Let's open <code>modules/nginx.nix</code>
 						and add an assertion that rejects zero replica counts:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, config, <span style="color: #8EC07C">...</span> }:
-{
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-    <span style="color: #D3869B">assertions</span> <span style="color: #8EC07C">=</span> [
-      {
-        <span style="color: #D3869B">assertion</span> <span style="color: #8EC07C">=</span>
-          config<span style="color: #8EC07C">.</span>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>replicas <span style="color: #8EC07C">&gt;</span> <span style="color: #D3869B">0</span>;
-        <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx must have at least 1 replica, got </span><span style="color: #D3869B">${</span>
-          <span style="color: #FE8019">toString</span> config<span style="color: #8EC07C">.</span>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>replicas
-        <span style="color: #D3869B">}</span><span style="color: #B8BB26">&quot;</span>;
-      }
-    ];
-
-    <span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
-      deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkDefault <span style="color: #D3869B">2</span>;
-        selector<span style="color: #8EC07C">.</span>matchLabels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
-          metadata<span style="color: #8EC07C">.</span>labels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx:1.25.1&quot;</span>;
-            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
-          };
-        };
-      };
-
-      services<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-        ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
-      };
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>    <span class="ss">assertions</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="p">{</span>
+<span class="linenos" data-linenos=" 9 "></span>        <span class="ss">assertion</span> <span class="o">=</span>
+<span class="linenos" data-linenos="10 "></span>          config<span class="o">.</span>applications<span class="o">.</span>nginx<span class="o">.</span>resources<span class="o">.</span>deployments<span class="o">.</span>nginx<span class="o">.</span>spec<span class="o">.</span>replicas <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span>
+<span class="linenos" data-linenos="11 "></span>        <span class="ss">message</span> <span class="o">=</span> <span class="s2">&quot;nginx must have at least 1 replica, got </span><span class="si">${</span>
+<span class="linenos" data-linenos="12 "></span>          <span class="nb">toString</span> config<span class="o">.</span>applications<span class="o">.</span>nginx<span class="o">.</span>resources<span class="o">.</span>deployments<span class="o">.</span>nginx<span class="o">.</span>spec<span class="o">.</span>replicas
+<span class="linenos" data-linenos="13 "></span>        <span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="14 "></span>      <span class="p">}</span>
+<span class="linenos" data-linenos="15 "></span>    <span class="p">];</span>
+<span class="linenos" data-linenos="16 "></span>
+<span class="linenos" data-linenos="17 "></span>    <span class="ss">resources</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="18 "></span>      deployments<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="19 "></span>        <span class="ss">replicas</span> <span class="o">=</span> lib<span class="o">.</span>mkDefault <span class="mi">2</span><span class="p">;</span>
+<span class="linenos" data-linenos="20 "></span>        selector<span class="o">.</span>matchLabels<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="21 "></span>        <span class="ss">template</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="22 "></span>          metadata<span class="o">.</span>labels<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="23 "></span>          spec<span class="o">.</span>containers<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="24 "></span>            <span class="ss">image</span> <span class="o">=</span> <span class="s2">&quot;nginx:1.25.1&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="25 "></span>            ports<span class="o">.</span>http<span class="o">.</span><span class="ss">containerPort</span> <span class="o">=</span> <span class="mi">80</span><span class="p">;</span>
+<span class="linenos" data-linenos="26 "></span>          <span class="p">};</span>
+<span class="linenos" data-linenos="27 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="28 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="29 "></span>
+<span class="linenos" data-linenos="30 "></span>      services<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="31 "></span>        selector<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="32 "></span>        ports<span class="o">.</span>http<span class="o">.</span><span class="ss">port</span> <span class="o">=</span> <span class="mi">80</span><span class="p">;</span>
+<span class="linenos" data-linenos="33 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="34 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="35 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="36 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>A couple things to notice:</p>
 					<ul>
@@ -131,13 +131,13 @@
 					</ul>
 					<p>Let's test it. Temporarily set <code>replicas = 0</code>
 						in <code>env/dev.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span><span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">0</span>;
+					<div class="highlight"><pre><span></span><code>applications<span class="o">.</span>nginx<span class="o">.</span>resources<span class="o">.</span>deployments<span class="o">.</span>nginx<span class="o">.</span>spec<span class="o">.</span><span class="ss">replicas</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </code></pre></div>
 					<p>Build:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
 </code></pre></div>
 					<p>Expected output:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>error: failed assertions:
+					<div class="highlight"><pre><span></span><code>error: failed assertions:
 - assertion(nginx): nginx must have at least 1 replica, got 0
 </code></pre></div>
 					<p>The <code>assertion(nginx)</code>
@@ -153,18 +153,18 @@
 						argument is global, it contains <em>all</em>
 						applications, not just the one where the assertion is defined. This means assertions can be written that span multiple applications.</p>
 					<p>A common pattern is a shared module that all environments import, containing global invariants. Let's create <code>modules/assertions.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, config, <span style="color: #8EC07C">...</span> }:
-{
-  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">assertions</span> <span style="color: #8EC07C">=</span> [
-    {
-      <span style="color: #D3869B">assertion</span> <span style="color: #8EC07C">=</span>
-        lib<span style="color: #8EC07C">.</span>all
-          (app: app<span style="color: #8EC07C">.</span>syncPolicy<span style="color: #8EC07C">.</span>autoSync<span style="color: #8EC07C">.</span>enable <span style="color: #8EC07C">or</span> <span style="color: #83A598">false</span>)
-          (lib<span style="color: #8EC07C">.</span>attrValues config<span style="color: #8EC07C">.</span>applications);
-      <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;All applications must have auto-sync enabled in this project&quot;</span>;
-    }
-  ];
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span><span class="ss">assertions</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>      <span class="ss">assertion</span> <span class="o">=</span>
+<span class="linenos" data-linenos=" 6 "></span>        lib<span class="o">.</span>all
+<span class="linenos" data-linenos=" 7 "></span>          <span class="p">(</span>app<span class="p">:</span> app<span class="o">.</span>syncPolicy<span class="o">.</span>autoSync<span class="o">.</span>enable <span class="ow">or</span> <span class="no">false</span><span class="p">)</span>
+<span class="linenos" data-linenos=" 8 "></span>          <span class="p">(</span>lib<span class="o">.</span>attrValues config<span class="o">.</span>applications<span class="p">);</span>
+<span class="linenos" data-linenos=" 9 "></span>      <span class="ss">message</span> <span class="o">=</span> <span class="s2">&quot;All applications must have auto-sync enabled in this project&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>    <span class="p">}</span>
+<span class="linenos" data-linenos="11 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos="12 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>This is a global assertion, defined under <code>nixidy.assertions</code>
 						instead of under a specific application. It iterates over every application in the environment and checks that <code>syncPolicy.autoSync.enable</code>
@@ -181,32 +181,32 @@
 					<p>Warnings print a message to stderr during evaluation but don't fail the build. They come in two forms: conditional and unconditional.</p>
 					<p>Conditional warning (only prints when <code>when</code>
 						evaluates to <code>true</code>):</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-  <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-  <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-  <span style="color: #D3869B">warnings</span> <span style="color: #8EC07C">=</span> [
-    {
-      <span style="color: #D3869B">when</span> <span style="color: #8EC07C">=</span> <span style="color: #8EC07C">!</span>config<span style="color: #8EC07C">.</span>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span>createNamespace;
-      <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx is not creating its namespace, make sure it exists on the cluster&quot;</span>;
-    }
-  ];
-
-  <span style="color: #928374; font-style: italic"># ... resources ...</span>
-};
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>applications<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>  <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 4 "></span>
+<span class="linenos" data-linenos=" 5 "></span>  <span class="ss">warnings</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 6 "></span>    <span class="p">{</span>
+<span class="linenos" data-linenos=" 7 "></span>      <span class="ss">when</span> <span class="o">=</span> <span class="o">!</span>config<span class="o">.</span>applications<span class="o">.</span>nginx<span class="o">.</span>createNamespace<span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="ss">message</span> <span class="o">=</span> <span class="s2">&quot;nginx is not creating its namespace, make sure it exists on the cluster&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>    <span class="p">}</span>
+<span class="linenos" data-linenos="10 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos="11 "></span>
+<span class="linenos" data-linenos="12 "></span>  <span class="c1"># ... resources ...</span>
+<span class="linenos" data-linenos="13 "></span><span class="p">};</span>
 </code></pre></div>
 					<p>Unconditional warning (always prints). Useful for deprecation notices during a migration:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">warnings</span> <span style="color: #8EC07C">=</span> [
-  <span style="color: #B8BB26">&quot;nginx is using a deprecated image tag pattern. Migrate to &#39;nginx:1.25.x&#39; before upgrading internal-app to v0.20.0.&quot;</span>
-];
+					<div class="highlight"><pre><span></span><code>applications<span class="o">.</span>nginx<span class="o">.</span><span class="ss">warnings</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="s2">&quot;nginx is using a deprecated image tag pattern. Migrate to &#39;nginx:1.25.x&#39; before upgrading internal-app to v0.20.0.&quot;</span>
+<span class="p">];</span>
 </code></pre></div>
 					<p>Global warnings work the same way as global assertions:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">warnings</span> <span style="color: #8EC07C">=</span> [
-  {
-    <span style="color: #D3869B">when</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span>branch <span style="color: #8EC07C">!=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-    <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Target branch is &#39;</span><span style="color: #D3869B">${</span>config<span style="color: #8EC07C">.</span>nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span>branch<span style="color: #D3869B">}</span><span style="color: #B8BB26">&#39;, not &#39;main&#39;. Make sure this is intentional&quot;</span>;
-  }
-];
+					<div class="highlight"><pre><span></span><code>nixidy<span class="o">.</span><span class="ss">warnings</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">{</span>
+    <span class="ss">when</span> <span class="o">=</span> config<span class="o">.</span>nixidy<span class="o">.</span>target<span class="o">.</span>branch <span class="o">!=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+    <span class="ss">message</span> <span class="o">=</span> <span class="s2">&quot;Target branch is &#39;</span><span class="si">${</span>config<span class="o">.</span>nixidy<span class="o">.</span>target<span class="o">.</span>branch<span class="si">}</span><span class="s2">&#39;, not &#39;main&#39;. Make sure this is intentional&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">];</span>
 </code></pre></div>
 					<div class="admonition tip">
 						<p class="admonition-title">tip</p>
@@ -214,47 +214,47 @@
 					</div>
 					<h2 id="a-production-hardening-module">A production hardening module</h2>
 					<p>The real power of assertions is encoding organizational policy as build-time checks. Let's create <code>modules/production-hardening.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, config, <span style="color: #8EC07C">...</span> }:
-{
-  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">assertions</span> <span style="color: #8EC07C">=</span> [
-    {
-      <span style="color: #D3869B">assertion</span> <span style="color: #8EC07C">=</span>
-        lib<span style="color: #8EC07C">.</span>all
-          (app:
-            <span style="color: #CC241D">let</span>
-              <span style="color: #D3869B">deploys</span> <span style="color: #8EC07C">=</span> app<span style="color: #8EC07C">.</span>resources<span style="color: #8EC07C">.</span>deployments <span style="color: #8EC07C">or</span> {};
-            <span style="color: #CC241D">in</span>
-              lib<span style="color: #8EC07C">.</span>all
-                (dep:
-                  <span style="color: #CC241D">let</span>
-                    <span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> dep<span style="color: #8EC07C">.</span>spec <span style="color: #8EC07C">or</span> {};
-                    <span style="color: #D3869B">containers</span> <span style="color: #8EC07C">=</span> spec<span style="color: #8EC07C">.</span>template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers <span style="color: #8EC07C">or</span> {};
-                  <span style="color: #CC241D">in</span>
-                    lib<span style="color: #8EC07C">.</span>all
-                      (c: c<span style="color: #8EC07C">.</span>resources <span style="color: #8EC07C">?</span> limits <span style="color: #8EC07C">&amp;&amp;</span> c<span style="color: #8EC07C">.</span>resources <span style="color: #8EC07C">?</span> requests)
-                      containers)
-                (lib<span style="color: #8EC07C">.</span>attrValues deploys))
-          (lib<span style="color: #8EC07C">.</span>attrValues config<span style="color: #8EC07C">.</span>applications);
-      <span style="color: #D3869B">message</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;All containers in all deployments must have resource requests and limits set&quot;</span>;
-    }
-  ];
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span><span class="ss">assertions</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>      <span class="ss">assertion</span> <span class="o">=</span>
+<span class="linenos" data-linenos=" 6 "></span>        lib<span class="o">.</span>all
+<span class="linenos" data-linenos=" 7 "></span>          <span class="p">(</span>app<span class="p">:</span>
+<span class="linenos" data-linenos=" 8 "></span>            <span class="k">let</span>
+<span class="linenos" data-linenos=" 9 "></span>              <span class="ss">deploys</span> <span class="o">=</span> app<span class="o">.</span>resources<span class="o">.</span>deployments <span class="ow">or</span> <span class="p">{};</span>
+<span class="linenos" data-linenos="10 "></span>            <span class="k">in</span>
+<span class="linenos" data-linenos="11 "></span>              lib<span class="o">.</span>all
+<span class="linenos" data-linenos="12 "></span>                <span class="p">(</span>dep<span class="p">:</span>
+<span class="linenos" data-linenos="13 "></span>                  <span class="k">let</span>
+<span class="linenos" data-linenos="14 "></span>                    <span class="ss">spec</span> <span class="o">=</span> dep<span class="o">.</span>spec <span class="ow">or</span> <span class="p">{};</span>
+<span class="linenos" data-linenos="15 "></span>                    <span class="ss">containers</span> <span class="o">=</span> spec<span class="o">.</span>template<span class="o">.</span>spec<span class="o">.</span>containers <span class="ow">or</span> <span class="p">{};</span>
+<span class="linenos" data-linenos="16 "></span>                  <span class="k">in</span>
+<span class="linenos" data-linenos="17 "></span>                    lib<span class="o">.</span>all
+<span class="linenos" data-linenos="18 "></span>                      <span class="p">(</span>c<span class="p">:</span> c<span class="o">.</span>resources <span class="o">?</span> limits <span class="o">&amp;&amp;</span> c<span class="o">.</span>resources <span class="o">?</span> requests<span class="p">)</span>
+<span class="linenos" data-linenos="19 "></span>                      containers<span class="p">)</span>
+<span class="linenos" data-linenos="20 "></span>                <span class="p">(</span>lib<span class="o">.</span>attrValues deploys<span class="p">))</span>
+<span class="linenos" data-linenos="21 "></span>          <span class="p">(</span>lib<span class="o">.</span>attrValues config<span class="o">.</span>applications<span class="p">);</span>
+<span class="linenos" data-linenos="22 "></span>      <span class="ss">message</span> <span class="o">=</span> <span class="s2">&quot;All containers in all deployments must have resource requests and limits set&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="23 "></span>    <span class="p">}</span>
+<span class="linenos" data-linenos="24 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos="25 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>This walks every application, every Deployment, and every container and asserts that each one has both <code>requests</code>
 						and <code>limits</code>
 						defined. It's a mouthful, but it only needs to be written once in a shared module. Every environment that imports it gets the check for free.</p>
 					<p>I'll import it only in <code>env/prod.nix</code>
 						since dev and staging don't need this gate:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  <span style="color: #D3869B">imports</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">../modules/production-hardening.nix</span> ];
-
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/prod&quot;</span>;
-
-  <span style="color: #928374; font-style: italic"># ... prod overrides ...</span>
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  <span class="ss">imports</span> <span class="o">=</span> <span class="p">[</span> <span class="l">../modules/production-hardening.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos=" 4 "></span>
+<span class="linenos" data-linenos=" 5 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/prod&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>
+<span class="linenos" data-linenos=" 9 "></span>  <span class="c1"># ... prod overrides ...</span>
+<span class="linenos" data-linenos="10 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>Build <code>.#dev</code>
 						and it succeeds without the hardening check. Build <code>.#prod</code>

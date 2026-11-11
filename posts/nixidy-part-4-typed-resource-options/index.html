@@ -79,7 +79,7 @@
 					</ul>
 					<h2 id="how-typed-resources-work">How typed resources work</h2>
 					<p>Every Kubernetes resource in nixidy lives under <code>applications.&lt;name&gt;.resources</code>. The full path follows the Kubernetes API group, version, and kind:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>resources.core.v1.Service
+					<div class="highlight"><pre><span></span><code>resources.core.v1.Service
 resources.apps.v1.Deployment
 resources.&quot;networking.k8s.io&quot;.v1.Ingress
 </code></pre></div>
@@ -143,69 +143,69 @@ resources.&quot;networking.k8s.io&quot;.v1.Ingress
 						that reads a CRD YAML file and produces a Nix module with typed options for that resource. The generated module integrates into nixidy via <code>nixidy.applicationImports</code>. Once imported, the CRD's resources become available under <code>resources.*</code>
 						with full type checking.</p>
 					<p>Let's generate types for Cilium's <code>CiliumNetworkPolicy</code>. Let's add the generator to <code>flake.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;My Kubernetes cluster managed with nixidy&quot;</span>;
-
-  <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
-    nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
-    flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
-    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy/latest&quot;</span>;
-  };
-
-  <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
-    nixpkgs,
-    flake-utils,
-    nixidy,
-    <span style="color: #8EC07C">...</span>
-  }:
-    flake-utils<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>eachDefaultSystem (system: <span style="color: #CC241D">let</span>
-      <span style="color: #D3869B">pkgs</span> <span style="color: #8EC07C">=</span> <span style="color: #FE8019">import</span> nixpkgs {<span style="color: #CC241D">inherit</span> system;};
-    <span style="color: #CC241D">in</span> {
-      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
-        <span style="color: #CC241D">inherit</span> pkgs;
-        <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
-          <span style="color: #B8BB26">./modules/templates.nix</span>
-          <span style="color: #B8BB26">./modules/webapps.nix</span>
-          <span style="color: #B8BB26">./modules/nginx.nix</span>
-          <span style="color: #B8BB26">./modules/traefik.nix</span>
-        ];
-        <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
-          dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
-          staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
-          prod<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/prod.nix</span> ];
-        };
-      };
-
-      packages<span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">cilium</span> <span style="color: #8EC07C">=</span>
-        nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
-          <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
-          <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub {
-            <span style="color: #D3869B">owner</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
-            <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
-            <span style="color: #D3869B">rev</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.15.6&quot;</span>;
-            <span style="color: #D3869B">hash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span>;
-          };
-          <span style="color: #D3869B">crdFiles</span> <span style="color: #8EC07C">=</span> [
-            <span style="color: #B8BB26">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
-          ];
-        };
-    });
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;My Kubernetes cluster managed with nixidy&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>
+<span class="linenos" data-linenos=" 4 "></span>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>    flake-utils<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/flake-utils&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>    nixidy<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:arnarg/nixidy/latest&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos=" 9 "></span>
+<span class="linenos" data-linenos="10 "></span>  <span class="ss">outputs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>    nixpkgs<span class="p">,</span>
+<span class="linenos" data-linenos="12 "></span>    flake-utils<span class="p">,</span>
+<span class="linenos" data-linenos="13 "></span>    nixidy<span class="p">,</span>
+<span class="linenos" data-linenos="14 "></span>    <span class="o">...</span>
+<span class="linenos" data-linenos="15 "></span>  <span class="p">}:</span>
+<span class="linenos" data-linenos="16 "></span>    flake-utils<span class="o">.</span>lib<span class="o">.</span>eachDefaultSystem <span class="p">(</span>system<span class="p">:</span> <span class="k">let</span>
+<span class="linenos" data-linenos="17 "></span>      <span class="ss">pkgs</span> <span class="o">=</span> <span class="nb">import</span> nixpkgs <span class="p">{</span><span class="k">inherit</span> system<span class="p">;};</span>
+<span class="linenos" data-linenos="18 "></span>    <span class="k">in</span> <span class="p">{</span>
+<span class="linenos" data-linenos="19 "></span>      <span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+<span class="linenos" data-linenos="20 "></span>        <span class="k">inherit</span> pkgs<span class="p">;</span>
+<span class="linenos" data-linenos="21 "></span>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos="22 "></span>          <span class="l">./modules/templates.nix</span>
+<span class="linenos" data-linenos="23 "></span>          <span class="l">./modules/webapps.nix</span>
+<span class="linenos" data-linenos="24 "></span>          <span class="l">./modules/nginx.nix</span>
+<span class="linenos" data-linenos="25 "></span>          <span class="l">./modules/traefik.nix</span>
+<span class="linenos" data-linenos="26 "></span>        <span class="p">];</span>
+<span class="linenos" data-linenos="27 "></span>        <span class="ss">envs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="28 "></span>          dev<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/dev.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="29 "></span>          staging<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/staging.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="30 "></span>          prod<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/prod.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="31 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="32 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="33 "></span>
+<span class="linenos" data-linenos="34 "></span>      packages<span class="o">.</span>generators<span class="o">.</span><span class="ss">cilium</span> <span class="o">=</span>
+<span class="linenos" data-linenos="35 "></span>        nixidy<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>generators<span class="o">.</span>fromCRD <span class="p">{</span>
+<span class="linenos" data-linenos="36 "></span>          <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;cilium&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="37 "></span>          <span class="ss">src</span> <span class="o">=</span> pkgs<span class="o">.</span>fetchFromGitHub <span class="p">{</span>
+<span class="linenos" data-linenos="38 "></span>            <span class="ss">owner</span> <span class="o">=</span> <span class="s2">&quot;cilium&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="39 "></span>            <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;cilium&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="40 "></span>            <span class="ss">rev</span> <span class="o">=</span> <span class="s2">&quot;v1.15.6&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="41 "></span>            <span class="ss">hash</span> <span class="o">=</span> <span class="s2">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="42 "></span>          <span class="p">};</span>
+<span class="linenos" data-linenos="43 "></span>          <span class="ss">crdFiles</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos="44 "></span>            <span class="s2">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
+<span class="linenos" data-linenos="45 "></span>          <span class="p">];</span>
+<span class="linenos" data-linenos="46 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="47 "></span>    <span class="p">});</span>
+<span class="linenos" data-linenos="48 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>Run the generator:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#generators.cilium
-cat<span style="color: #EBDBB2"> </span>result
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>build<span class="w"> </span>.#generators.cilium
+cat<span class="w"> </span>result
 </code></pre></div>
 					<p>The output is a Nix file: a module that defines typed options for <code>CiliumNetworkPolicy</code>. Copy it into the project:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>mkdir<span style="color: #EBDBB2"> </span>-p<span style="color: #EBDBB2"> </span>generated
-cp<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </span>generated/cilium.nix
+					<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>generated
+cp<span class="w"> </span>result<span class="w"> </span>generated/cilium.nix
 </code></pre></div>
 					<p>Then register it via <code>nixidy.applicationImports</code>
 						in one of the shared modules. For example, add to <code>modules/nginx.nix</code>
 						or create a dedicated <code>modules/crd-imports.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">applicationImports</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">../generated/cilium.nix</span> ];
-}
+					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+  nixidy<span class="o">.</span><span class="ss">applicationImports</span> <span class="o">=</span> <span class="p">[</span> <span class="l">../generated/cilium.nix</span> <span class="p">];</span>
+<span class="p">}</span>
 </code></pre></div>
 					<div class="admonition warning">
 						<p class="admonition-title">warning</p>
@@ -217,25 +217,25 @@ cp<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </spa
 						module system, meaning it makes the generated resource types available inside <code>applications.&lt;name&gt;.resources.*</code>. If you put the import in the wrong place, the types won't be visible and you'll get "attribute missing" errors.</p>
 					</div>
 					<p>Now the Cilium network policy resource is available with full type safety. Let's create <code>modules/cilium-policies.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">network-policies</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;kube-system&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">false</span>;
-
-    resources<span style="color: #8EC07C">.</span>ciliumNetworkPolicies<span style="color: #8EC07C">.</span>allow-dns<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">endpointSelector</span> <span style="color: #8EC07C">=</span> {};
-      <span style="color: #D3869B">egress</span> <span style="color: #8EC07C">=</span> [{
-        <span style="color: #D3869B">toEndpoints</span> <span style="color: #8EC07C">=</span> [{
-          matchLabels<span style="color: #8EC07C">.</span><span style="color: #B8BB26">&quot;k8s:io.kubernetes.pod.namespace&quot;</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;kube-system&quot;</span>;
-        }];
-        <span style="color: #D3869B">toPorts</span> <span style="color: #8EC07C">=</span> [{
-          <span style="color: #D3869B">ports</span> <span style="color: #8EC07C">=</span> [{ <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;53&quot;</span>; <span style="color: #D3869B">protocol</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;UDP&quot;</span>; }];
-        }];
-      }];
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">network-policies</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;kube-system&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">false</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>    resources<span class="o">.</span>ciliumNetworkPolicies<span class="o">.</span>allow-dns<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="ss">endpointSelector</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="linenos" data-linenos=" 9 "></span>      <span class="ss">egress</span> <span class="o">=</span> <span class="p">[{</span>
+<span class="linenos" data-linenos="10 "></span>        <span class="ss">toEndpoints</span> <span class="o">=</span> <span class="p">[{</span>
+<span class="linenos" data-linenos="11 "></span>          matchLabels<span class="o">.</span><span class="s2">&quot;k8s:io.kubernetes.pod.namespace&quot;</span> <span class="o">=</span> <span class="s2">&quot;kube-system&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="12 "></span>        <span class="p">}];</span>
+<span class="linenos" data-linenos="13 "></span>        <span class="ss">toPorts</span> <span class="o">=</span> <span class="p">[{</span>
+<span class="linenos" data-linenos="14 "></span>          <span class="ss">ports</span> <span class="o">=</span> <span class="p">[{</span> <span class="ss">port</span> <span class="o">=</span> <span class="s2">&quot;53&quot;</span><span class="p">;</span> <span class="ss">protocol</span> <span class="o">=</span> <span class="s2">&quot;UDP&quot;</span><span class="p">;</span> <span class="p">}];</span>
+<span class="linenos" data-linenos="15 "></span>        <span class="p">}];</span>
+<span class="linenos" data-linenos="16 "></span>      <span class="p">}];</span>
+<span class="linenos" data-linenos="17 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="18 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="19 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>The <code>resources.ciliumNetworkPolicies</code>
 						path (the alias for the generated CRD type) only exists because <code>generated/cilium.nix</code>
@@ -244,25 +244,25 @@ cp<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </spa
 						or <code>extraRawYamls</code>
 						without type checking.</p>
 					<p>Now if we build the dev environment and look at the generated <code>CiliumNetworkPolicy</code>.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
-cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns.yaml
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
+cat<span class="w"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns.yaml
 </code></pre></div>
 					<p>It should show you the generated manifest like below.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">cilium.io/v2</span>
-<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">CiliumNetworkPolicy</span>
-<span style="color: #8EC07C; font-weight: bold">metadata</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">allow-dns</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">kube-system</span>
-<span style="color: #8EC07C; font-weight: bold">spec</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">egress</span>:
-<span style="color: #EBDBB2">    </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">toEndpoints</span>:
-<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">matchLabels</span>:
-<span style="color: #EBDBB2">            </span><span style="color: #8EC07C; font-weight: bold">k8s:io.kubernetes.pod.namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">kube-system</span>
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">toPorts</span>:
-<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">ports</span>:
-<span style="color: #EBDBB2">            </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">port</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;53&quot;</span>
-<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">protocol</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">UDP</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">endpointSelector</span>:<span style="color: #EBDBB2"> </span>{}
+					<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cilium.io/v2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CiliumNetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow-dns</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">egress</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">toEndpoints</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">k8s:io.kubernetes.pod.namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
+<span class="w">      </span><span class="nt">toPorts</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;53&quot;</span>
+<span class="w">              </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UDP</span>
+<span class="w">  </span><span class="nt">endpointSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 </code></pre></div>
 					<div class="admonition tip">
 						<p class="admonition-title"><strong>Available in v0.20.0</strong></p>
@@ -270,23 +270,23 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
 						generates a file you build, copy, and import. The module accessor <code>fromCRDModule</code>
 						returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the <code>generators</code>
 						argument in nixidy modules:</p>
-						<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ generators, <span style="color: #8EC07C">...</span> }:
-{
-  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">applicationImports</span> <span style="color: #8EC07C">=</span> [
-    (generators<span style="color: #8EC07C">.</span>fromCRDModule {
-      <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
-      <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub {
-        <span style="color: #D3869B">owner</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
-        <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cilium&quot;</span>;
-        <span style="color: #D3869B">rev</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.15.6&quot;</span>;
-        <span style="color: #D3869B">hash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span>;
-      };
-      <span style="color: #D3869B">crdFiles</span> <span style="color: #8EC07C">=</span> [
-        <span style="color: #B8BB26">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
-      ];
-    })
-  ];
-}
+						<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> generators<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span><span class="ss">applicationImports</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="p">(</span>generators<span class="o">.</span>fromCRDModule <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>      <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;cilium&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>      <span class="ss">src</span> <span class="o">=</span> pkgs<span class="o">.</span>fetchFromGitHub <span class="p">{</span>
+<span class="linenos" data-linenos=" 7 "></span>        <span class="ss">owner</span> <span class="o">=</span> <span class="s2">&quot;cilium&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>        <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;cilium&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>        <span class="ss">rev</span> <span class="o">=</span> <span class="s2">&quot;v1.15.6&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>        <span class="ss">hash</span> <span class="o">=</span> <span class="s2">&quot;sha256-oC6pjtiS8HvqzzRQsE+2bm6JP7Y3cbupXxCKSvP6/kU=&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="11 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="12 "></span>      <span class="ss">crdFiles</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos="13 "></span>        <span class="s2">&quot;pkg/k8s/apis/cilium.io/client/crds/v2/ciliumnetworkpolicies.yaml&quot;</span>
+<span class="linenos" data-linenos="14 "></span>      <span class="p">];</span>
+<span class="linenos" data-linenos="15 "></span>    <span class="p">})</span>
+<span class="linenos" data-linenos="16 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos="17 "></span><span class="p">}</span>
 </code></pre></div>
 					</div>
 					<h2 id="generating-types-from-helm-chart-crds">Generating types from Helm chart CRDs</h2>
@@ -294,17 +294,17 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
 						generator handles this: it templates the Helm chart, extracts CRDs from the rendered output, and generates typed options.</p>
 					<p>As an example, let's generate types for cert-manager's <code>Certificate</code>
 						CRD:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>packages<span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">cert-manager</span> <span style="color: #8EC07C">=</span>
-  nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromChartCRD {
-    <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
-    <span style="color: #D3869B">chartAttrs</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://charts.jetstack.io&quot;</span>;
-      <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
-      <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.19.1&quot;</span>;
-      <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span>;
-    };
-    <span style="color: #D3869B">kindFilter</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;Certificate&quot;</span> ];
-  };
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>packages<span class="o">.</span>generators<span class="o">.</span><span class="ss">cert-manager</span> <span class="o">=</span>
+<span class="linenos" data-linenos=" 2 "></span>  nixidy<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>generators<span class="o">.</span>fromChartCRD <span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>    <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;cert-manager&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">chartAttrs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>      <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;https://charts.jetstack.io&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>      <span class="ss">chart</span> <span class="o">=</span> <span class="s2">&quot;cert-manager&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>      <span class="ss">version</span> <span class="o">=</span> <span class="s2">&quot;v1.19.1&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="ss">chartHash</span> <span class="o">=</span> <span class="s2">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="10 "></span>    <span class="ss">kindFilter</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;Certificate&quot;</span> <span class="p">];</span>
+<span class="linenos" data-linenos="11 "></span>  <span class="p">};</span>
 </code></pre></div>
 					<p>The workflow is the same: <code>nix build .#generators.cert-manager</code>, copy the output into <code>generated/</code>, and register via <code>nixidy.applicationImports</code>. The <code>crds</code>
 						list is optional, leave it empty to generate types for all CRDs the chart produces.</p>
@@ -320,21 +320,21 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
 							has <code>fromCRDModule</code>, <code>fromChartCRD</code>
 							has <code>fromChartCRDModule</code>
 							which also returns a module value instead of a generated file:</p>
-						<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ generators, <span style="color: #8EC07C">...</span> }:
-{
-  nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">applicationImports</span> <span style="color: #8EC07C">=</span> [
-    (generators<span style="color: #8EC07C">.</span>fromChartCRDModule {
-      <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
-      <span style="color: #D3869B">chartAttrs</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #D3869B">repo</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://charts.jetstack.io&quot;</span>;
-        <span style="color: #D3869B">chart</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;cert-manager&quot;</span>;
-        <span style="color: #D3869B">version</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;v1.19.1&quot;</span>;
-        <span style="color: #D3869B">chartHash</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span>;
-      };
-      <span style="color: #D3869B">kindFilter</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">&quot;Certificate&quot;</span> ];
-    })
-  ];
-}
+						<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> generators<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span><span class="ss">applicationImports</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="p">(</span>generators<span class="o">.</span>fromChartCRDModule <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>      <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;cert-manager&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>      <span class="ss">chartAttrs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 7 "></span>        <span class="ss">repo</span> <span class="o">=</span> <span class="s2">&quot;https://charts.jetstack.io&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>        <span class="ss">chart</span> <span class="o">=</span> <span class="s2">&quot;cert-manager&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>        <span class="ss">version</span> <span class="o">=</span> <span class="s2">&quot;v1.19.1&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>        <span class="ss">chartHash</span> <span class="o">=</span> <span class="s2">&quot;sha256-fs14wuKK+blC0l+pRfa//oBV2X+Dr3nNX+Z94nrQVrA=&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="11 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="12 "></span>      <span class="ss">kindFilter</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&quot;Certificate&quot;</span> <span class="p">];</span>
+<span class="linenos" data-linenos="13 "></span>    <span class="p">})</span>
+<span class="linenos" data-linenos="14 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos="15 "></span><span class="p">}</span>
 </code></pre></div>
 					</div>
 					<h2 id="resolving-naming-conflicts">Resolving naming conflicts</h2>
@@ -343,17 +343,17 @@ cat<span style="color: #EBDBB2"> </span>result/network-policies/CiliumNetworkPol
 					<p>The <code>fromCRD</code>
 						generator accepts a <code>namePrefix</code>
 						to disambiguate:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">postgres</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
-  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;postgres-operator&quot;</span>;
-  <span style="color: #D3869B">namePrefix</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;postgres&quot;</span>;
-  <span style="color: #928374; font-style: italic"># ...</span>
-};
-
-generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">mysql</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
-  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;mysql-operator&quot;</span>;
-  <span style="color: #D3869B">namePrefix</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;mysql&quot;</span>;
-  <span style="color: #928374; font-style: italic"># ...</span>
-};
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>generators<span class="o">.</span><span class="ss">postgres</span> <span class="o">=</span> nixidy<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>generators<span class="o">.</span>fromCRD <span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;postgres-operator&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>  <span class="ss">namePrefix</span> <span class="o">=</span> <span class="s2">&quot;postgres&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 4 "></span>  <span class="c1"># ...</span>
+<span class="linenos" data-linenos=" 5 "></span><span class="p">};</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>generators<span class="o">.</span><span class="ss">mysql</span> <span class="o">=</span> nixidy<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>generators<span class="o">.</span>fromCRD <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>  <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;mysql-operator&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>  <span class="ss">namePrefix</span> <span class="o">=</span> <span class="s2">&quot;mysql&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>  <span class="c1"># ...</span>
+<span class="linenos" data-linenos="11 "></span><span class="p">};</span>
 </code></pre></div>
 					<p>This produces <code>resources.postgresDatabases</code>
 						and <code>resources.mysqlDatabases</code>
@@ -367,22 +367,22 @@ generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">mysq
 						and <code>spec.group</code>
 						fields. For example, a Keycloak Crossplane provider might ship two CRDs that both resolve to the plural <code>groups</code>
 						under different sub-groups, producing a collision on <code>resources.groups</code>. The override disambiguates:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">keycloak</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>packages<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>system<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>generators<span style="color: #8EC07C">.</span>fromCRD {
-  <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloak&quot;</span>;
-  <span style="color: #D3869B">src</span> <span style="color: #8EC07C">=</span> pkgs<span style="color: #8EC07C">.</span>fetchFromGitHub { <span style="color: #928374; font-style: italic">/* ... */</span> };
-  <span style="color: #D3869B">crdFiles</span> <span style="color: #8EC07C">=</span> [
-    <span style="color: #B8BB26">&quot;package/crds/authenticationflow.keycloak.crossplane.io_bindings.yaml&quot;</span>
-    <span style="color: #B8BB26">&quot;package/crds/group.keycloak.crossplane.io_groups.yaml&quot;</span>
-    <span style="color: #B8BB26">&quot;package/crds/user.keycloak.crossplane.io_groups.yaml&quot;</span>
-  ];
-  <span style="color: #D3869B">namePrefix</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloak&quot;</span>;
-  <span style="color: #D3869B">attrNameOverrides</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #928374; font-style: italic"># The CRD &quot;groups&quot; under the &quot;user.keycloak.crossplane.io&quot; group</span>
-    <span style="color: #928374; font-style: italic"># would collide with the one under &quot;group.keycloak.crossplane.io&quot;.</span>
-    <span style="color: #928374; font-style: italic"># Map it to a distinct name.</span>
-    <span style="color: #B8BB26">&quot;groups.user.keycloak.crossplane.io&quot;</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;keycloakUserGroups&quot;</span>;
-  };
-};
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>generators<span class="o">.</span><span class="ss">keycloak</span> <span class="o">=</span> nixidy<span class="o">.</span>packages<span class="o">.</span><span class="si">${</span>system<span class="si">}</span><span class="o">.</span>generators<span class="o">.</span>fromCRD <span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">name</span> <span class="o">=</span> <span class="s2">&quot;keycloak&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>  <span class="ss">src</span> <span class="o">=</span> pkgs<span class="o">.</span>fetchFromGitHub <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">};</span>
+<span class="linenos" data-linenos=" 4 "></span>  <span class="ss">crdFiles</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="s2">&quot;package/crds/authenticationflow.keycloak.crossplane.io_bindings.yaml&quot;</span>
+<span class="linenos" data-linenos=" 6 "></span>    <span class="s2">&quot;package/crds/group.keycloak.crossplane.io_groups.yaml&quot;</span>
+<span class="linenos" data-linenos=" 7 "></span>    <span class="s2">&quot;package/crds/user.keycloak.crossplane.io_groups.yaml&quot;</span>
+<span class="linenos" data-linenos=" 8 "></span>  <span class="p">];</span>
+<span class="linenos" data-linenos=" 9 "></span>  <span class="ss">namePrefix</span> <span class="o">=</span> <span class="s2">&quot;keycloak&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>  <span class="ss">attrNameOverrides</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>    <span class="c1"># The CRD &quot;groups&quot; under the &quot;user.keycloak.crossplane.io&quot; group</span>
+<span class="linenos" data-linenos="12 "></span>    <span class="c1"># would collide with the one under &quot;group.keycloak.crossplane.io&quot;.</span>
+<span class="linenos" data-linenos="13 "></span>    <span class="c1"># Map it to a distinct name.</span>
+<span class="linenos" data-linenos="14 "></span>    <span class="s2">&quot;groups.user.keycloak.crossplane.io&quot;</span> <span class="o">=</span> <span class="s2">&quot;keycloakUserGroups&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="15 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="16 "></span><span class="p">};</span>
 </code></pre></div>
 					<p>The right-hand side (<code>"keycloakUserGroups"</code>) is the attribute name to use: <code>resources.keycloakUserGroups.my-instance</code>. It takes precedence over both <code>namePrefix</code>
 						and the auto-generated plural alias. <code>attrNameOverrides</code>
@@ -399,10 +399,10 @@ generators<span style="color: #8EC07C">.</span><span style="color: #D3869B">mysq
 						metadata block at the top level isn't a valid Kubernetes field, and the <code>ENC[...]</code>
 						ciphertext values would be reformatted by a parse/emit round-trip, breaking decryption.</p>
 					<p>For these, use <code>extraRawYamls</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">my-app</span> <span style="color: #8EC07C">=</span> {
-  <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;my-app&quot;</span>;
-  <span style="color: #D3869B">extraRawYamls</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./encrypted-secret.yaml</span> ];
-};
+					<div class="highlight"><pre><span></span><code>applications<span class="o">.</span><span class="ss">my-app</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;my-app&quot;</span><span class="p">;</span>
+  <span class="ss">extraRawYamls</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./encrypted-secret.yaml</span> <span class="p">];</span>
+<span class="p">};</span>
 </code></pre></div>
 					<p>The file is copied verbatim into the application's output directory. nixidy never parses it, never strips fields, never type-checks it. The trade-off is that it can't be patched through <code>resources.*</code>, and <code>nixidy apply</code>
 						(the direct <code>kubectl</code>

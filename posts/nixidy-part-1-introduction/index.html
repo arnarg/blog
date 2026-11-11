@@ -97,34 +97,34 @@
 						is a string, and a typo in <code>selector</code>
 						is a build error, not a runtime surprise.</p>
 					<p>Let's start by creating the project:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>mkdir<span style="color: #EBDBB2"> </span>my-cluster<span style="color: #EBDBB2"> </span><span style="color: #8EC07C">&amp;&amp;</span><span style="color: #EBDBB2"> </span><span style="color: #FE8019">cd</span><span style="color: #EBDBB2"> </span>my-cluster
-git<span style="color: #EBDBB2"> </span>init
+					<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>my-cluster<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>my-cluster
+git<span class="w"> </span>init
 </code></pre></div>
 					<p>Now create <code>flake.nix</code>, this is the entry point that wires nixidy into your Nix flake:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;My Kubernetes cluster managed with nixidy&quot;</span>;
-
-  <span style="color: #D3869B">inputs</span> <span style="color: #8EC07C">=</span> {
-    nixpkgs<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span>;
-    flake-utils<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:numtide/flake-utils&quot;</span>;
-    nixidy<span style="color: #8EC07C">.</span><span style="color: #D3869B">url</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;github:arnarg/nixidy/latest&quot;</span>;
-  };
-
-  <span style="color: #D3869B">outputs</span> <span style="color: #8EC07C">=</span> {
-    nixpkgs,
-    flake-utils,
-    nixidy,
-    <span style="color: #8EC07C">...</span>
-  }:
-    flake-utils<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>eachDefaultSystem (system: <span style="color: #CC241D">let</span>
-      <span style="color: #D3869B">pkgs</span> <span style="color: #8EC07C">=</span> <span style="color: #FE8019">import</span> nixpkgs {<span style="color: #CC241D">inherit</span> system;};
-    <span style="color: #CC241D">in</span> {
-      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
-        <span style="color: #CC241D">inherit</span> pkgs;
-        envs<span style="color: #8EC07C">.</span>dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
-      };
-    });
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;My Kubernetes cluster managed with nixidy&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>
+<span class="linenos" data-linenos=" 4 "></span>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>    nixpkgs<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:nixos/nixpkgs/nixos-unstable&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>    flake-utils<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:numtide/flake-utils&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>    nixidy<span class="o">.</span><span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;github:arnarg/nixidy/latest&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos=" 9 "></span>
+<span class="linenos" data-linenos="10 "></span>  <span class="ss">outputs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>    nixpkgs<span class="p">,</span>
+<span class="linenos" data-linenos="12 "></span>    flake-utils<span class="p">,</span>
+<span class="linenos" data-linenos="13 "></span>    nixidy<span class="p">,</span>
+<span class="linenos" data-linenos="14 "></span>    <span class="o">...</span>
+<span class="linenos" data-linenos="15 "></span>  <span class="p">}:</span>
+<span class="linenos" data-linenos="16 "></span>    flake-utils<span class="o">.</span>lib<span class="o">.</span>eachDefaultSystem <span class="p">(</span>system<span class="p">:</span> <span class="k">let</span>
+<span class="linenos" data-linenos="17 "></span>      <span class="ss">pkgs</span> <span class="o">=</span> <span class="nb">import</span> nixpkgs <span class="p">{</span><span class="k">inherit</span> system<span class="p">;};</span>
+<span class="linenos" data-linenos="18 "></span>    <span class="k">in</span> <span class="p">{</span>
+<span class="linenos" data-linenos="19 "></span>      <span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+<span class="linenos" data-linenos="20 "></span>        <span class="k">inherit</span> pkgs<span class="p">;</span>
+<span class="linenos" data-linenos="21 "></span>        envs<span class="o">.</span>dev<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/dev.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="22 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="23 "></span>    <span class="p">});</span>
+<span class="linenos" data-linenos="24 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>A couple things worth noting:</p>
 					<ul>
@@ -140,38 +140,38 @@ git<span style="color: #EBDBB2"> </span>init
 					</div>
 					<h2 id="an-environment-module-with-one-application">An environment module with one application</h2>
 					<p>Now let's create the environment directory and the dev module:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>mkdir<span style="color: #EBDBB2"> </span>-p<span style="color: #EBDBB2"> </span>env
+					<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>env
 </code></pre></div>
 					<p>Write <code>env/dev.nix</code>. Make sure to replace the repository URL with your own (this is where nixidy will tell Argo CD to look for rendered manifests):</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">repository</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">branch</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;main&quot;</span>;
-  nixidy<span style="color: #8EC07C">.</span>target<span style="color: #8EC07C">.</span><span style="color: #D3869B">rootPath</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;./manifests/dev&quot;</span>;
-
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-    <span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
-      deployments<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">2</span>;
-        selector<span style="color: #8EC07C">.</span>matchLabels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
-          metadata<span style="color: #8EC07C">.</span>labels<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">nginx</span> <span style="color: #8EC07C">=</span> {
-            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx:1.25.1&quot;</span>;
-            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
-          };
-        };
-      };
-
-      services<span style="color: #8EC07C">.</span>nginx<span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">app</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;nginx&quot;</span>;
-        ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">80</span>;
-      };
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 4 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/dev&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>
+<span class="linenos" data-linenos=" 6 "></span>  applications<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 7 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>
+<span class="linenos" data-linenos="10 "></span>    <span class="ss">resources</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>      deployments<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="12 "></span>        <span class="ss">replicas</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="linenos" data-linenos="13 "></span>        selector<span class="o">.</span>matchLabels<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="14 "></span>        <span class="ss">template</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="15 "></span>          metadata<span class="o">.</span>labels<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="16 "></span>          spec<span class="o">.</span>containers<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="17 "></span>            <span class="ss">image</span> <span class="o">=</span> <span class="s2">&quot;nginx:1.25.1&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="18 "></span>            ports<span class="o">.</span>http<span class="o">.</span><span class="ss">containerPort</span> <span class="o">=</span> <span class="mi">80</span><span class="p">;</span>
+<span class="linenos" data-linenos="19 "></span>          <span class="p">};</span>
+<span class="linenos" data-linenos="20 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="21 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="22 "></span>
+<span class="linenos" data-linenos="23 "></span>      services<span class="o">.</span>nginx<span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="24 "></span>        selector<span class="o">.</span><span class="ss">app</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="25 "></span>        ports<span class="o">.</span>http<span class="o">.</span><span class="ss">port</span> <span class="o">=</span> <span class="mi">80</span><span class="p">;</span>
+<span class="linenos" data-linenos="26 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="27 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="28 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="29 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>Let me walk through what this declares:</p>
 					<ul>
@@ -200,17 +200,17 @@ git<span style="color: #EBDBB2"> </span>init
 					</div>
 					<h2 id="build-the-manifests">Build the manifests</h2>
 					<p>Run the build:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
 </code></pre></div>
 					<div class="admonition info">
 						<p class="admonition-title">info</p>
 						<p>The first run downloads nixidy and its dependencies into the Nix store. Subsequent runs are instant if nothing changed.</p>
 					</div>
 					<p>Inspect the output:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>tree<span style="color: #EBDBB2"> </span>result
+					<div class="highlight"><pre><span></span><code>tree<span class="w"> </span>result
 </code></pre></div>
 					<p>You should see:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>result/
+					<div class="highlight"><pre><span></span><code>result/
 ├── apps/
 │   └── Application-nginx.yaml
 └── nginx/
@@ -219,48 +219,48 @@ git<span style="color: #EBDBB2"> </span>init
     └── Service-nginx.yaml
 </code></pre></div>
 					<p>Look at the generated Deployment:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>cat<span style="color: #EBDBB2"> </span>result/nginx/Deployment-nginx.yaml
+					<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml
 </code></pre></div>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">apps/v1</span>
-<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Deployment</span>
-<span style="color: #8EC07C; font-weight: bold">metadata</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #8EC07C; font-weight: bold">spec</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">replicas</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">2</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">selector</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">matchLabels</span>:
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">app</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">template</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">metadata</span>:
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">labels</span>:
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">app</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">spec</span>:
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">containers</span>:
-<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">image</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx:1.25.1</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">ports</span>:
-<span style="color: #EBDBB2">            </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">containerPort</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">80</span>
-<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">http</span>
+					<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:1.25.1</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
 </code></pre></div>
 					<p>And the Argo CD <code>Application</code>
 						that nixidy generated for you:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>cat<span style="color: #EBDBB2"> </span>result/apps/Application-nginx.yaml
+					<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>result/apps/Application-nginx.yaml
 </code></pre></div>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">argoproj.io/v1alpha1</span>
-<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Application</span>
-<span style="color: #8EC07C; font-weight: bold">metadata</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">argocd</span>
-<span style="color: #8EC07C; font-weight: bold">spec</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">destination</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">nginx</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">server</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">https://kubernetes.default.svc</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">project</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">default</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">source</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">path</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">./manifests/dev/nginx</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">repoURL</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">https://github.com/YOUR_USERNAME/my-cluster.git</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">targetRevision</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">main</span>
+					<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Application</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argocd</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">destination</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://kubernetes.default.svc</span>
+<span class="w">  </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">  </span><span class="nt">source</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./manifests/dev/nginx</span>
+<span class="w">    </span><span class="nt">repoURL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/YOUR_USERNAME/my-cluster.git</span>
+<span class="w">    </span><span class="nt">targetRevision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
 </code></pre></div>
 					<p>Every <code>applications.*</code>
 						block produces exactly one Argo CD <code>Application</code>
@@ -269,20 +269,20 @@ git<span style="color: #EBDBB2"> </span>init
 					<p>The <code>nixidy switch</code>
 						command copies the built manifests into your repository at the <code>rootPath</code>
 						you configured:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>switch<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>switch<span class="w"> </span>.#dev
 </code></pre></div>
 					<p>This creates <code>./manifests/dev/</code>
 						with the same directory tree as <code>result/</code>. Commit and push:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>git<span style="color: #EBDBB2"> </span>add<span style="color: #EBDBB2"> </span>.
-git<span style="color: #EBDBB2"> </span>commit<span style="color: #EBDBB2"> </span>-m<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;Add nginx application via nixidy&quot;</span>
-git<span style="color: #EBDBB2"> </span>push
+					<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>.
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Add nginx application via nixidy&quot;</span>
+git<span class="w"> </span>push
 </code></pre></div>
 					<p>The rendered YAML is now in your repository. Argo CD can see it.</p>
 					<h2 id="deploy-to-your-cluster">Deploy to your cluster</h2>
 					<h3 id="bootstrap-with-argo-cd">Bootstrap with Argo CD</h3>
 					<p>If Argo CD is already running in your cluster, one command creates an "app of apps" (a parent <code>Application</code>
 						that manages all your nixidy applications):</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>bootstrap<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>|<span style="color: #EBDBB2"> </span>kubectl<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>-f<span style="color: #EBDBB2"> </span>-
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>bootstrap<span class="w"> </span>.#dev<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
 </code></pre></div>
 					<p>This outputs an Argo CD <code>Application</code>
 						manifest that points at <code>manifests/dev/apps/</code>
@@ -290,7 +290,7 @@ git<span style="color: #EBDBB2"> </span>push
 					<h3 id="or-apply-directly-for-testing">Or: apply directly (for testing)</h3>
 					<p>If you want to skip Argo CD temporarily, a local <code>kind</code>
 						cluster for instance:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>apply<span style="color: #EBDBB2"> </span>.#dev
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>apply<span class="w"> </span>.#dev
 </code></pre></div>
 					<p>This runs <code>kubectl apply --prune</code>
 						with the correct label selectors, so resources removed from your nixidy config are also removed from the cluster on the next apply (if resources have been removed).</p>

@@ -88,76 +88,76 @@
 						block is a function that receives the instance's <code>name</code>
 						and resolved <code>config</code>, and returns a set of nixidy resources.</p>
 					<p>Let's create <code>modules/templates.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  templates<span style="color: #8EC07C">.</span><span style="color: #D3869B">webApp</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">options</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
-        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>types<span style="color: #8EC07C">.</span>str;
-        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Container image to deploy&quot;</span>;
-      };
-
-      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
-        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>types<span style="color: #8EC07C">.</span>int;
-        <span style="color: #D3869B">default</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">2</span>;
-        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Number of pod replicas&quot;</span>;
-      };
-
-      <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
-        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>types<span style="color: #8EC07C">.</span>port;
-        <span style="color: #D3869B">default</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">8080</span>;
-        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Application port (container, service, and ingress)&quot;</span>;
-      };
-
-      <span style="color: #D3869B">ingressHost</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkOption {
-        <span style="color: #D3869B">type</span> <span style="color: #8EC07C">=</span> <span style="color: #CC241D">with</span> lib<span style="color: #8EC07C">.</span>types; nullOr str;
-        <span style="color: #D3869B">default</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">null</span>;
-        <span style="color: #D3869B">description</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Ingress hostname. Set to null (the default) to skip Ingress creation.&quot;</span>;
-      };
-    };
-
-    <span style="color: #D3869B">output</span> <span style="color: #8EC07C">=</span> { name, config, <span style="color: #8EC07C">...</span> }: <span style="color: #CC241D">let</span>
-      <span style="color: #D3869B">labels</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #B8BB26">&quot;app.kubernetes.io/name&quot;</span> <span style="color: #8EC07C">=</span> name;
-        <span style="color: #B8BB26">&quot;app.kubernetes.io/instance&quot;</span> <span style="color: #8EC07C">=</span> name;
-      };
-    <span style="color: #CC241D">in</span> {
-      deployments<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>replicas;
-        selector<span style="color: #8EC07C">.</span><span style="color: #D3869B">matchLabels</span> <span style="color: #8EC07C">=</span> labels;
-        <span style="color: #D3869B">template</span> <span style="color: #8EC07C">=</span> {
-          metadata<span style="color: #8EC07C">.</span><span style="color: #D3869B">labels</span> <span style="color: #8EC07C">=</span> labels;
-          spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span> <span style="color: #8EC07C">=</span> {
-            <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>image;
-            ports<span style="color: #8EC07C">.</span>http<span style="color: #8EC07C">.</span><span style="color: #D3869B">containerPort</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
-          };
-        };
-      };
-
-      services<span style="color: #8EC07C">.</span><span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span><span style="color: #D3869B">spec</span> <span style="color: #8EC07C">=</span> {
-        <span style="color: #D3869B">selector</span> <span style="color: #8EC07C">=</span> labels;
-        ports<span style="color: #8EC07C">.</span><span style="color: #D3869B">http</span> <span style="color: #8EC07C">=</span> {
-          <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
-          <span style="color: #D3869B">targetPort</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
-        };
-      };
-
-      <span style="color: #D3869B">ingresses</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkIf (config<span style="color: #8EC07C">.</span>ingressHost <span style="color: #8EC07C">!=</span> <span style="color: #83A598">null</span>) {
-        <span style="color: #D3869B">${</span>name<span style="color: #D3869B">}</span><span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span><span style="color: #D3869B">rules</span> <span style="color: #8EC07C">=</span> [{
-          <span style="color: #D3869B">host</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>ingressHost;
-          http<span style="color: #8EC07C">.</span><span style="color: #D3869B">paths</span> <span style="color: #8EC07C">=</span> [{
-            <span style="color: #D3869B">path</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;/&quot;</span>;
-            <span style="color: #D3869B">pathType</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;Prefix&quot;</span>;
-            backend<span style="color: #8EC07C">.</span><span style="color: #D3869B">service</span> <span style="color: #8EC07C">=</span> {
-              <span style="color: #D3869B">name</span> <span style="color: #8EC07C">=</span> name;
-              port<span style="color: #8EC07C">.</span><span style="color: #D3869B">number</span> <span style="color: #8EC07C">=</span> config<span style="color: #8EC07C">.</span>port;
-            };
-          }];
-        }];
-      };
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  templates<span class="o">.</span><span class="ss">webApp</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">options</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 5 "></span>      <span class="ss">image</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<span class="linenos" data-linenos=" 6 "></span>        <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>str<span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>        <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Container image to deploy&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos=" 9 "></span>
+<span class="linenos" data-linenos="10 "></span>      <span class="ss">replicas</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<span class="linenos" data-linenos="11 "></span>        <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>int<span class="p">;</span>
+<span class="linenos" data-linenos="12 "></span>        <span class="ss">default</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="linenos" data-linenos="13 "></span>        <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Number of pod replicas&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="14 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="15 "></span>
+<span class="linenos" data-linenos="16 "></span>      <span class="ss">port</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<span class="linenos" data-linenos="17 "></span>        <span class="ss">type</span> <span class="o">=</span> lib<span class="o">.</span>types<span class="o">.</span>port<span class="p">;</span>
+<span class="linenos" data-linenos="18 "></span>        <span class="ss">default</span> <span class="o">=</span> <span class="mi">8080</span><span class="p">;</span>
+<span class="linenos" data-linenos="19 "></span>        <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Application port (container, service, and ingress)&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="20 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="21 "></span>
+<span class="linenos" data-linenos="22 "></span>      <span class="ss">ingressHost</span> <span class="o">=</span> lib<span class="o">.</span>mkOption <span class="p">{</span>
+<span class="linenos" data-linenos="23 "></span>        <span class="ss">type</span> <span class="o">=</span> <span class="k">with</span> lib<span class="o">.</span>types<span class="p">;</span> nullOr str<span class="p">;</span>
+<span class="linenos" data-linenos="24 "></span>        <span class="ss">default</span> <span class="o">=</span> <span class="no">null</span><span class="p">;</span>
+<span class="linenos" data-linenos="25 "></span>        <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;Ingress hostname. Set to null (the default) to skip Ingress creation.&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="26 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="27 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="28 "></span>
+<span class="linenos" data-linenos="29 "></span>    <span class="ss">output</span> <span class="o">=</span> <span class="p">{</span> name<span class="p">,</span> config<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span> <span class="k">let</span>
+<span class="linenos" data-linenos="30 "></span>      <span class="ss">labels</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="31 "></span>        <span class="s2">&quot;app.kubernetes.io/name&quot;</span> <span class="o">=</span> name<span class="p">;</span>
+<span class="linenos" data-linenos="32 "></span>        <span class="s2">&quot;app.kubernetes.io/instance&quot;</span> <span class="o">=</span> name<span class="p">;</span>
+<span class="linenos" data-linenos="33 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="34 "></span>    <span class="k">in</span> <span class="p">{</span>
+<span class="linenos" data-linenos="35 "></span>      deployments<span class="o">.</span><span class="si">${</span>name<span class="si">}</span><span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="36 "></span>        <span class="ss">replicas</span> <span class="o">=</span> config<span class="o">.</span>replicas<span class="p">;</span>
+<span class="linenos" data-linenos="37 "></span>        selector<span class="o">.</span><span class="ss">matchLabels</span> <span class="o">=</span> labels<span class="p">;</span>
+<span class="linenos" data-linenos="38 "></span>        <span class="ss">template</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="39 "></span>          metadata<span class="o">.</span><span class="ss">labels</span> <span class="o">=</span> labels<span class="p">;</span>
+<span class="linenos" data-linenos="40 "></span>          spec<span class="o">.</span>containers<span class="o">.</span><span class="si">${</span>name<span class="si">}</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="41 "></span>            <span class="ss">image</span> <span class="o">=</span> config<span class="o">.</span>image<span class="p">;</span>
+<span class="linenos" data-linenos="42 "></span>            ports<span class="o">.</span>http<span class="o">.</span><span class="ss">containerPort</span> <span class="o">=</span> config<span class="o">.</span>port<span class="p">;</span>
+<span class="linenos" data-linenos="43 "></span>          <span class="p">};</span>
+<span class="linenos" data-linenos="44 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="45 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="46 "></span>
+<span class="linenos" data-linenos="47 "></span>      services<span class="o">.</span><span class="si">${</span>name<span class="si">}</span><span class="o">.</span><span class="ss">spec</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="48 "></span>        <span class="ss">selector</span> <span class="o">=</span> labels<span class="p">;</span>
+<span class="linenos" data-linenos="49 "></span>        ports<span class="o">.</span><span class="ss">http</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="50 "></span>          <span class="ss">port</span> <span class="o">=</span> config<span class="o">.</span>port<span class="p">;</span>
+<span class="linenos" data-linenos="51 "></span>          <span class="ss">targetPort</span> <span class="o">=</span> config<span class="o">.</span>port<span class="p">;</span>
+<span class="linenos" data-linenos="52 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="53 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="54 "></span>
+<span class="linenos" data-linenos="55 "></span>      <span class="ss">ingresses</span> <span class="o">=</span> lib<span class="o">.</span>mkIf <span class="p">(</span>config<span class="o">.</span>ingressHost <span class="o">!=</span> <span class="no">null</span><span class="p">)</span> <span class="p">{</span>
+<span class="linenos" data-linenos="56 "></span>        <span class="si">${</span>name<span class="si">}</span><span class="o">.</span>spec<span class="o">.</span><span class="ss">rules</span> <span class="o">=</span> <span class="p">[{</span>
+<span class="linenos" data-linenos="57 "></span>          <span class="ss">host</span> <span class="o">=</span> config<span class="o">.</span>ingressHost<span class="p">;</span>
+<span class="linenos" data-linenos="58 "></span>          http<span class="o">.</span><span class="ss">paths</span> <span class="o">=</span> <span class="p">[{</span>
+<span class="linenos" data-linenos="59 "></span>            <span class="ss">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="60 "></span>            <span class="ss">pathType</span> <span class="o">=</span> <span class="s2">&quot;Prefix&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="61 "></span>            backend<span class="o">.</span><span class="ss">service</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="62 "></span>              <span class="ss">name</span> <span class="o">=</span> name<span class="p">;</span>
+<span class="linenos" data-linenos="63 "></span>              port<span class="o">.</span><span class="ss">number</span> <span class="o">=</span> config<span class="o">.</span>port<span class="p">;</span>
+<span class="linenos" data-linenos="64 "></span>            <span class="p">};</span>
+<span class="linenos" data-linenos="65 "></span>          <span class="p">}];</span>
+<span class="linenos" data-linenos="66 "></span>        <span class="p">}];</span>
+<span class="linenos" data-linenos="67 "></span>      <span class="p">};</span>
+<span class="linenos" data-linenos="68 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="69 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="70 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>Let me walk through the structure:</p>
 					<ul>
@@ -185,46 +185,46 @@
 					<p>Now let's add <code>modules/templates.nix</code>
 						to the shared <code>modules</code>
 						list in <code>flake.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>      <span style="color: #D3869B">nixidyEnvs</span> <span style="color: #8EC07C">=</span> nixidy<span style="color: #8EC07C">.</span>lib<span style="color: #8EC07C">.</span>mkEnvs {
-        <span style="color: #CC241D">inherit</span> pkgs;
-        <span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
-          <span style="color: #B8BB26">./modules/templates.nix</span>
-          <span style="color: #B8BB26">./modules/nginx.nix</span>
-          <span style="color: #B8BB26">./modules/traefik.nix</span>
-        ];
-        <span style="color: #D3869B">envs</span> <span style="color: #8EC07C">=</span> {
-          dev<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/dev.nix</span> ];
-          staging<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/staging.nix</span> ];
-          prod<span style="color: #8EC07C">.</span><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [ <span style="color: #B8BB26">./env/prod.nix</span> ];
-        };
-      };
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>      <span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>        <span class="k">inherit</span> pkgs<span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+<span class="linenos" data-linenos=" 4 "></span>          <span class="l">./modules/templates.nix</span>
+<span class="linenos" data-linenos=" 5 "></span>          <span class="l">./modules/nginx.nix</span>
+<span class="linenos" data-linenos=" 6 "></span>          <span class="l">./modules/traefik.nix</span>
+<span class="linenos" data-linenos=" 7 "></span>        <span class="p">];</span>
+<span class="linenos" data-linenos=" 8 "></span>        <span class="ss">envs</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 9 "></span>          dev<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/dev.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="10 "></span>          staging<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/staging.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="11 "></span>          prod<span class="o">.</span><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./env/prod.nix</span> <span class="p">];</span>
+<span class="linenos" data-linenos="12 "></span>        <span class="p">};</span>
+<span class="linenos" data-linenos="13 "></span>      <span class="p">};</span>
 </code></pre></div>
 					<p>Now let's create a new application module that uses the template. Create <code>modules/webapps.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>{ lib, <span style="color: #8EC07C">...</span> }:
-{
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-    templates<span style="color: #8EC07C">.</span>webApp<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend:v1.2.3&quot;</span>;
-      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3</span>;
-      <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3000</span>;
-      <span style="color: #D3869B">ingressHost</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;app.example.com&quot;</span>;
-    };
-  };
-
-  applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">api</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;api&quot;</span>;
-    <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-    templates<span style="color: #8EC07C">.</span>webApp<span style="color: #8EC07C">.</span><span style="color: #D3869B">api</span> <span style="color: #8EC07C">=</span> {
-      <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;api:v2.0.1&quot;</span>;
-      <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> lib<span style="color: #8EC07C">.</span>mkDefault <span style="color: #D3869B">2</span>;
-      <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">8080</span>;
-    };
-  };
-}
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+<span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
+<span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">frontend</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;frontend&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 5 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 6 "></span>
+<span class="linenos" data-linenos=" 7 "></span>    templates<span class="o">.</span>webApp<span class="o">.</span><span class="ss">frontend</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 8 "></span>      <span class="ss">image</span> <span class="o">=</span> <span class="s2">&quot;frontend:v1.2.3&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>      <span class="ss">replicas</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>      <span class="ss">port</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">;</span>
+<span class="linenos" data-linenos="11 "></span>      <span class="ss">ingressHost</span> <span class="o">=</span> <span class="s2">&quot;app.example.com&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="12 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="13 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="14 "></span>
+<span class="linenos" data-linenos="15 "></span>  applications<span class="o">.</span><span class="ss">api</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="16 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;api&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="17 "></span>    <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos="18 "></span>
+<span class="linenos" data-linenos="19 "></span>    templates<span class="o">.</span>webApp<span class="o">.</span><span class="ss">api</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="20 "></span>      <span class="ss">image</span> <span class="o">=</span> <span class="s2">&quot;api:v2.0.1&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="21 "></span>      <span class="ss">replicas</span> <span class="o">=</span> lib<span class="o">.</span>mkDefault <span class="mi">2</span><span class="p">;</span>
+<span class="linenos" data-linenos="22 "></span>      <span class="ss">port</span> <span class="o">=</span> <span class="mi">8080</span><span class="p">;</span>
+<span class="linenos" data-linenos="23 "></span>    <span class="p">};</span>
+<span class="linenos" data-linenos="24 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="25 "></span><span class="p">}</span>
 </code></pre></div>
 					<p>The template instantiation syntax is <code>templates.&lt;templateName&gt;.&lt;instanceName&gt;</code>. Here's what each part means:</p>
 					<ul>
@@ -246,21 +246,21 @@
 						beats the default <code>1000</code>), same composition mechanism from <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>.</p>
 					<p>Let's add <code>modules/webapps.nix</code>
 						to the shared modules in <code>flake.nix</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #D3869B">modules</span> <span style="color: #8EC07C">=</span> [
-  <span style="color: #B8BB26">./modules/templates.nix</span>
-  <span style="color: #B8BB26">./modules/webapps.nix</span>
-  <span style="color: #B8BB26">./modules/nginx.nix</span>
-  <span style="color: #B8BB26">./modules/traefik.nix</span>
-];
+					<div class="highlight"><pre><span></span><code><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="l">./modules/templates.nix</span>
+  <span class="l">./modules/webapps.nix</span>
+  <span class="l">./modules/nginx.nix</span>
+  <span class="l">./modules/traefik.nix</span>
+<span class="p">];</span>
 </code></pre></div>
 					<p>Then let's build the dev environment and review the output.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
-tree<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </span>-l
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
+tree<span class="w"> </span>result<span class="w"> </span>-l
 </code></pre></div>
 					<p>It should show that the <code>frontend</code>
 						and <code>api</code>
 						resources were generated.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>result
+					<div class="highlight"><pre><span></span><code>result
 ├── api
 │   ├── Deployment-api.yaml
 │   ├── Namespace-api.yaml
@@ -273,60 +273,60 @@ tree<span style="color: #EBDBB2"> </span>result<span style="color: #EBDBB2"> </s
 </code></pre></div>
 					<h2 id="patching-template-generated-resources">Patching template-generated resources</h2>
 					<p>Template output is regular nixidy resources and I can override individual fields the same way I'd override a shared module. If the frontend needs a memory limit that the template doesn't expose as an option:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>applications<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
-  <span style="color: #D3869B">namespace</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend&quot;</span>;
-  <span style="color: #D3869B">createNamespace</span> <span style="color: #8EC07C">=</span> <span style="color: #83A598">true</span>;
-
-  templates<span style="color: #8EC07C">.</span>webApp<span style="color: #8EC07C">.</span><span style="color: #D3869B">frontend</span> <span style="color: #8EC07C">=</span> {
-    <span style="color: #D3869B">image</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;frontend:v1.2.3&quot;</span>;
-    <span style="color: #D3869B">replicas</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3</span>;
-    <span style="color: #D3869B">port</span> <span style="color: #8EC07C">=</span> <span style="color: #D3869B">3000</span>;
-    <span style="color: #D3869B">ingressHost</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;app.example.com&quot;</span>;
-  };
-
-  resources<span style="color: #8EC07C">.</span>deployments<span style="color: #8EC07C">.</span>frontend<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>template<span style="color: #8EC07C">.</span>spec<span style="color: #8EC07C">.</span>containers<span style="color: #8EC07C">.</span>frontend<span style="color: #8EC07C">.</span><span style="color: #D3869B">resources</span> <span style="color: #8EC07C">=</span> {
-    requests<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;64Mi&quot;</span>;
-    limits<span style="color: #8EC07C">.</span><span style="color: #D3869B">memory</span> <span style="color: #8EC07C">=</span> <span style="color: #B8BB26">&quot;128Mi&quot;</span>;
-  };
-};
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>applications<span class="o">.</span><span class="ss">frontend</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 2 "></span>  <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;frontend&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 3 "></span>  <span class="ss">createNamespace</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 4 "></span>
+<span class="linenos" data-linenos=" 5 "></span>  templates<span class="o">.</span>webApp<span class="o">.</span><span class="ss">frontend</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos=" 6 "></span>    <span class="ss">image</span> <span class="o">=</span> <span class="s2">&quot;frontend:v1.2.3&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 7 "></span>    <span class="ss">replicas</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 8 "></span>    <span class="ss">port</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">;</span>
+<span class="linenos" data-linenos=" 9 "></span>    <span class="ss">ingressHost</span> <span class="o">=</span> <span class="s2">&quot;app.example.com&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="10 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="11 "></span>
+<span class="linenos" data-linenos="12 "></span>  resources<span class="o">.</span>deployments<span class="o">.</span>frontend<span class="o">.</span>spec<span class="o">.</span>template<span class="o">.</span>spec<span class="o">.</span>containers<span class="o">.</span>frontend<span class="o">.</span><span class="ss">resources</span> <span class="o">=</span> <span class="p">{</span>
+<span class="linenos" data-linenos="13 "></span>    requests<span class="o">.</span><span class="ss">memory</span> <span class="o">=</span> <span class="s2">&quot;64Mi&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="14 "></span>    limits<span class="o">.</span><span class="ss">memory</span> <span class="o">=</span> <span class="s2">&quot;128Mi&quot;</span><span class="p">;</span>
+<span class="linenos" data-linenos="15 "></span>  <span class="p">};</span>
+<span class="linenos" data-linenos="16 "></span><span class="p">};</span>
 </code></pre></div>
 					<p>The template generates the Deployment. The <code>resources.deployments.frontend</code>
 						block merges with the generated output and adds resource limits without touching the template.</p>
 					<p>Now if we build the dev environment and look at the <code>frontend</code>
 						deployment.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>build<span style="color: #EBDBB2"> </span>.#dev
-cat<span style="color: #EBDBB2"> </span>result/frontend/Deployment-frontend.yaml
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
+cat<span class="w"> </span>result/frontend/Deployment-frontend.yaml
 </code></pre></div>
 					<p>It should show you a <code>Deployment</code>
 						with resource requests and limits added.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">apiVersion</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">apps/v1</span>
-<span style="color: #8EC07C; font-weight: bold">kind</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Deployment</span>
-<span style="color: #8EC07C; font-weight: bold">metadata</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">namespace</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #8EC07C; font-weight: bold">spec</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">replicas</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">3</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">selector</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">matchLabels</span>:
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/instance</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">template</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">metadata</span>:
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">labels</span>:
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/instance</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">app.kubernetes.io/name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">spec</span>:
-<span style="color: #EBDBB2">      </span><span style="color: #8EC07C; font-weight: bold">containers</span>:
-<span style="color: #EBDBB2">        </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">image</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend:v1.2.3</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">frontend</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">ports</span>:
-<span style="color: #EBDBB2">            </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">containerPort</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">3000</span>
-<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">http</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">resources</span>:
-<span style="color: #EBDBB2">            </span><span style="color: #8EC07C; font-weight: bold">limits</span>:
-<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">memory</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">128Mi</span>
-<span style="color: #EBDBB2">            </span><span style="color: #8EC07C; font-weight: bold">requests</span>:
-<span style="color: #EBDBB2">              </span><span style="color: #8EC07C; font-weight: bold">memory</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">64Mi</span>
+					<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/instance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app.kubernetes.io/instance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">        </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend:v1.2.3</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3000</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128Mi</span>
+<span class="w">            </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span>
 </code></pre></div>
 					<h2 id="whats-next">What's next</h2>
 					<p>Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In <a href="/posts/nixidy-part-4-typed-resource-options/">part 4</a>

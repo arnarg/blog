@@ -84,51 +84,51 @@
 					<p>The core idea: Nix files change on <code>main</code>, CI renders them to YAML, and the YAML lands in a PR that a human reviews before it reaches Argo CD. This is the <a href="https://akuity.io/blog/the-rendered-manifests-pattern/">rendered manifests pattern</a>
 						that nixidy is built around. CI is the bridge between "Nix changed" and "YAML is ready to deploy."</p>
 					<p>Let's create <code>.github/workflows/promote-dev.yaml</code>:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code><span style="color: #8EC07C; font-weight: bold">name</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">Promote to dev</span>
-
-<span style="color: #8EC07C; font-weight: bold">on</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">push</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">branches</span>:
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">main</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">paths-ignore</span>:
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">manifests/**</span>
-
-<span style="color: #8EC07C; font-weight: bold">jobs</span>:
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">promote</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">runs-on</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">ubuntu-latest</span>
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">steps</span>:
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">actions/checkout@v4</span>
-
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">cachix/install-nix-action@v31</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">extra_nix_config</span>:<span style="color: #EBDBB2"> </span>|
-<span style="color: #EBDBB2">            </span><span style="color: #83A598">extra-experimental-features = nix-command flakes</span>
-
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">arnarg/nixidy/actions/build@main</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">id</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">build</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">environment</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">.#dev</span>
-
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">shell</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">bash</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">run</span>:<span style="color: #EBDBB2"> </span>|
-<span style="color: #EBDBB2">          </span><span style="color: #83A598">rsync --recursive --delete &#39;${{ steps.build.outputs.out-path }}/&#39; manifests/dev</span>
-
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">EndBug/add-and-commit@v9</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">id</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">commit</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">default_author</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">github_actions</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">message</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;chore:</span><span style="color: #83A598"> </span><span style="color: #B8BB26">promote</span><span style="color: #83A598"> </span><span style="color: #B8BB26">to</span><span style="color: #83A598"> </span><span style="color: #B8BB26">dev</span><span style="color: #83A598"> </span><span style="color: #B8BB26">${{</span><span style="color: #83A598"> </span><span style="color: #B8BB26">github.sha</span><span style="color: #83A598"> </span><span style="color: #B8BB26">}}&quot;</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">fetch</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">false</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">new_branch</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">promote/env/dev</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">push</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">--set-upstream origin promote/env/dev --force</span>
-
-<span style="color: #EBDBB2">      </span>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">thomaseizinger/create-pull-request@1.4.0</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">if</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">${{ steps.commit.outputs.pushed == &#39;true&#39; }}</span>
-<span style="color: #EBDBB2">        </span><span style="color: #8EC07C; font-weight: bold">with</span>:
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">github_token</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">${{ github.token }}</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">head</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">promote/env/dev</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">base</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">main</span>
-<span style="color: #EBDBB2">          </span><span style="color: #8EC07C; font-weight: bold">title</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">&quot;chore:</span><span style="color: #83A598"> </span><span style="color: #B8BB26">promote</span><span style="color: #83A598"> </span><span style="color: #B8BB26">to</span><span style="color: #83A598"> </span><span style="color: #B8BB26">dev</span><span style="color: #83A598"> </span><span style="color: #B8BB26">${{</span><span style="color: #83A598"> </span><span style="color: #B8BB26">github.sha</span><span style="color: #83A598"> </span><span style="color: #B8BB26">}}&quot;</span>
+					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Promote to dev</span>
+<span class="linenos" data-linenos=" 2 "></span>
+<span class="linenos" data-linenos=" 3 "></span><span class="nt">on</span><span class="p">:</span>
+<span class="linenos" data-linenos=" 4 "></span><span class="w">  </span><span class="nt">push</span><span class="p">:</span>
+<span class="linenos" data-linenos=" 5 "></span><span class="w">    </span><span class="nt">branches</span><span class="p">:</span>
+<span class="linenos" data-linenos=" 6 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="linenos" data-linenos=" 7 "></span><span class="w">    </span><span class="nt">paths-ignore</span><span class="p">:</span>
+<span class="linenos" data-linenos=" 8 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">manifests/**</span>
+<span class="linenos" data-linenos=" 9 "></span>
+<span class="linenos" data-linenos="10 "></span><span class="nt">jobs</span><span class="p">:</span>
+<span class="linenos" data-linenos="11 "></span><span class="w">  </span><span class="nt">promote</span><span class="p">:</span>
+<span class="linenos" data-linenos="12 "></span><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="linenos" data-linenos="13 "></span><span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="linenos" data-linenos="14 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="linenos" data-linenos="15 "></span>
+<span class="linenos" data-linenos="16 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cachix/install-nix-action@v31</span>
+<span class="linenos" data-linenos="17 "></span><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="linenos" data-linenos="18 "></span><span class="w">          </span><span class="nt">extra_nix_config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="linenos" data-linenos="19 "></span><span class="w">            </span><span class="no">extra-experimental-features = nix-command flakes</span>
+<span class="linenos" data-linenos="20 "></span>
+<span class="linenos" data-linenos="21 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arnarg/nixidy/actions/build@main</span>
+<span class="linenos" data-linenos="22 "></span><span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">build</span>
+<span class="linenos" data-linenos="23 "></span><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="linenos" data-linenos="24 "></span><span class="w">          </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.#dev</span>
+<span class="linenos" data-linenos="25 "></span>
+<span class="linenos" data-linenos="26 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">shell</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bash</span>
+<span class="linenos" data-linenos="27 "></span><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="linenos" data-linenos="28 "></span><span class="w">          </span><span class="no">rsync --recursive --delete &#39;${{ steps.build.outputs.out-path }}/&#39; manifests/dev</span>
+<span class="linenos" data-linenos="29 "></span>
+<span class="linenos" data-linenos="30 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EndBug/add-and-commit@v9</span>
+<span class="linenos" data-linenos="31 "></span><span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">commit</span>
+<span class="linenos" data-linenos="32 "></span><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="linenos" data-linenos="33 "></span><span class="w">          </span><span class="nt">default_author</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">github_actions</span>
+<span class="linenos" data-linenos="34 "></span><span class="w">          </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;chore:</span><span class="nv"> </span><span class="s">promote</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">dev</span><span class="nv"> </span><span class="s">${{</span><span class="nv"> </span><span class="s">github.sha</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="linenos" data-linenos="35 "></span><span class="w">          </span><span class="nt">fetch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="linenos" data-linenos="36 "></span><span class="w">          </span><span class="nt">new_branch</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">promote/env/dev</span>
+<span class="linenos" data-linenos="37 "></span><span class="w">          </span><span class="nt">push</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--set-upstream origin promote/env/dev --force</span>
+<span class="linenos" data-linenos="38 "></span>
+<span class="linenos" data-linenos="39 "></span><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">thomaseizinger/create-pull-request@1.4.0</span>
+<span class="linenos" data-linenos="40 "></span><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ steps.commit.outputs.pushed == &#39;true&#39; }}</span>
+<span class="linenos" data-linenos="41 "></span><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="linenos" data-linenos="42 "></span><span class="w">          </span><span class="nt">github_token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ github.token }}</span>
+<span class="linenos" data-linenos="43 "></span><span class="w">          </span><span class="nt">head</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">promote/env/dev</span>
+<span class="linenos" data-linenos="44 "></span><span class="w">          </span><span class="nt">base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">main</span>
+<span class="linenos" data-linenos="45 "></span><span class="w">          </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;chore:</span><span class="nv"> </span><span class="s">promote</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">dev</span><span class="nv"> </span><span class="s">${{</span><span class="nv"> </span><span class="s">github.sha</span><span class="nv"> </span><span class="s">}}&quot;</span>
 </code></pre></div>
 					<p>Let me walk through each step:</p>
 					<ul>
@@ -161,9 +161,9 @@
 						action produces the output path but doesn't write to disk. You can use the <code>switch</code>
 						action instead which will automatically <code>rsync</code>
 						the manifests to the configured <code>nixidy.target.rootPath</code>, as a result it's really only useful if your manifests live on the same branch as the nixidy modules and flake.nix.</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>-<span style="color: #EBDBB2"> </span><span style="color: #8EC07C; font-weight: bold">uses</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">arnarg/nixidy/actions/switch@main</span>
-<span style="color: #EBDBB2">  </span><span style="color: #8EC07C; font-weight: bold">with</span>:
-<span style="color: #EBDBB2">    </span><span style="color: #8EC07C; font-weight: bold">environment</span>:<span style="color: #EBDBB2"> </span><span style="color: #B8BB26">.#dev</span>
+					<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">arnarg/nixidy/actions/switch@main</span>
+<span class="w">  </span><span class="nt">with</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.#dev</span>
 </code></pre></div>
 					<h2 id="which-git-strategy-for-which-environment">Which Git strategy for which environment?</h2>
 					<p>The <a href="https://nixidy.dev/user_guide/git_strategies/">Git Strategies docs</a>
@@ -179,11 +179,11 @@
 					<h2 id="comparing-environments-with-nixidy-diff">Comparing environments with nixidy diff</h2>
 					<p>Before promoting from staging to production it's useful to see what's different. Not the Nix source, the rendered YAML. <code>nixidy diff</code>
 						compares two build outputs:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#staging<span style="color: #EBDBB2"> </span>--env<span style="color: #EBDBB2"> </span>.#prod
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>diff<span class="w"> </span>.#staging<span class="w"> </span>--env<span class="w"> </span>.#prod
 </code></pre></div>
 					<p>This builds both environments and prints the diff of their rendered manifests. The output shows exactly which fields change between staging and production: replicas, resource limits, sync policies, image tags.</p>
 					<p>Compare against the manifests already in your repository:</p>
-					<div class="highlight" style="background: #282828"><pre style="line-height: 125%;"><span></span><code>nix<span style="color: #EBDBB2"> </span>run<span style="color: #EBDBB2"> </span>github:arnarg/nixidy/latest<span style="color: #EBDBB2"> </span>--<span style="color: #EBDBB2"> </span>diff<span style="color: #EBDBB2"> </span>.#dev<span style="color: #EBDBB2"> </span>--path<span style="color: #EBDBB2"> </span>manifests/dev
+					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>diff<span class="w"> </span>.#dev<span class="w"> </span>--path<span class="w"> </span>manifests/dev
 </code></pre></div>
 					<p>This builds <code>.#dev</code>
 						and compares it against the YAML already committed in <code>manifests/dev/</code>. If the output is empty, nothing changed and the local Nix edits don't affect the rendered manifests. If it shows changes, those are the exact diffs that will appear in the promotion PR.</p>
