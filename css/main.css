@@ -2107,9 +2107,33 @@ pre[class*="language-"] {
   transition-delay: 75ms;
 }
 
-.tooltip[data-tip]:hover::after {
+.tooltip[data-tip]:hover::after,
+.tooltip[data-tip]:focus-visible::after {
   opacity: 1;
   transition-delay: 0s;
+}
+
+/* Preserve the copy button's layout when the shared tooltip is applied. */
+
+.copy-code-button.tooltip {
+  position: absolute;
+  display: inline-flex;
+}
+
+/* Open beside the copy button without overflowing the code block. */
+
+.tooltip-left[data-tip]::before {
+  left: auto;
+  right: calc(100% + 0.5rem);
+
+  /* Slide leftward into view */
+  --tt-pos: 0.25rem;
+}
+
+.tooltip-left[data-tip]::after {
+  left: auto;
+  right: calc(100% + 0.25rem);
+  clip-path: polygon(100% 50%, 0% 0%, 0% 100%);
 }
 
 .hover\:bg-stone-700:hover {
