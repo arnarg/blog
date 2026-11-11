@@ -30,9 +30,9 @@ for (const block of document.querySelectorAll("article div.highlight")) {
 
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "copy-code-button";
+  button.className = "copy-code-button tooltip tooltip-left";
   button.setAttribute("aria-label", "Copy code block");
-  button.title = "Copy code block";
+  button.dataset.tip = "Copy code block";
   button.innerHTML = CLIPBOARD_ICON;
 
   const status = document.createElement("span");
@@ -50,19 +50,19 @@ for (const block of document.querySelectorAll("article div.highlight")) {
     try {
       await navigator.clipboard.writeText(code.textContent);
       button.innerHTML = CHECK_ICON;
-      button.title = "Copied!";
+      button.dataset.tip = "Copied!";
       button.dataset.state = "success";
       status.textContent = "Code copied to clipboard.";
     } catch {
       button.innerHTML = ERROR_ICON;
-      button.title = "Copy failed";
+      button.dataset.tip = "Copy failed";
       button.dataset.state = "error";
       status.textContent = "Unable to copy code to clipboard.";
     } finally {
       button.disabled = false;
       resetTimer = window.setTimeout(() => {
         button.innerHTML = CLIPBOARD_ICON;
-        button.title = "Copy code block";
+        button.dataset.tip = "Copy code block";
         delete button.dataset.state;
         status.textContent = "";
       }, COPY_RESET_DELAY_MS);
