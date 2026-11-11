@@ -53,7 +53,7 @@ git init
 
 Now create `flake.nix`, this is the entry point that wires nixidy into your Nix flake:
 
-```nix
+```nix linenums="1"
 {
   description = "My Kubernetes cluster managed with nixidy";
 
@@ -101,7 +101,7 @@ mkdir -p env
 
 Write `env/dev.nix`. Make sure to replace the repository URL with your own (this is where nixidy will tell Argo CD to look for rendered manifests):
 
-```nix
+```nix linenums="1"
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
   nixidy.target.branch = "main";

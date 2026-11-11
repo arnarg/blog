@@ -37,7 +37,7 @@ An assertion is a boolean condition and a message. If the condition evaluates to
 
 Let's open `modules/nginx.nix` and add an assertion that rejects zero replica counts:
 
-```nix
+```nix linenums="1"
 { lib, config, ... }:
 {
   applications.nginx = {
@@ -114,7 +114,7 @@ The `config` argument is global, it contains *all* applications, not just the on
 
 A common pattern is a shared module that all environments import, containing global invariants. Let's create `modules/assertions.nix`:
 
-```nix
+```nix linenums="1"
 { lib, config, ... }:
 {
   nixidy.assertions = [
@@ -149,7 +149,7 @@ Warnings print a message to stderr during evaluation but don't fail the build. T
 
 Conditional warning (only prints when `when` evaluates to `true`):
 
-```nix
+```nix linenums="1"
 applications.nginx = {
   namespace = "nginx";
   createNamespace = true;
@@ -194,7 +194,7 @@ An unconditional warning is shorthand for `{ when = true; message = "..."; }`. n
 
 The real power of assertions is encoding organizational policy as build-time checks. Let's create `modules/production-hardening.nix`:
 
-```nix
+```nix linenums="1"
 { lib, config, ... }:
 {
   nixidy.assertions = [
@@ -226,7 +226,7 @@ This walks every application, every Deployment, and every container and asserts 
 
 I'll import it only in `env/prod.nix` since dev and staging don't need this gate:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   imports = [ ../modules/production-hardening.nix ];

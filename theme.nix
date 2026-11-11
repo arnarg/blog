@@ -606,7 +606,11 @@ in
   };
 
   website.content.processors.md = {
-    settings.highlight.style = "gruvbox-dark-medium";
+    settings.highlight = {
+      style = "gruvbox-dark-medium";
+      noclasses = false;
+      linenumsStyle = "pymdownx-inline";
+    };
     extraPythonPackages = [
       # Add pygments-styles: https://pygments-styles.org/
       (
@@ -660,6 +664,7 @@ in
     FILES_PACKAGE = config.build.filesPackage;
 
     buildPhase = ''
+      cp ${config.website.content.processors.md.highlightStylesheet} css/highlight.css
       yarn run build
     '';
 

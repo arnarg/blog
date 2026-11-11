@@ -35,7 +35,7 @@ We're going to build a project with a shared `modules/nginx.nix` imported by `en
 
 The nginx definition currently lives inline in `env/dev.nix`. Let's pull it out into its own module so every environment can import it. Create `modules/nginx.nix`:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   applications.nginx = {
@@ -74,7 +74,7 @@ The NixOS module system has three priority tiers you'll use constantly: `lib.mkD
 
 Now I need to update `flake.nix` to pull in the shared module via `mkEnvs`'s `modules` list:
 
-```nix
+```nix linenums="1"
 {
   description = "My Kubernetes cluster managed with nixidy";
 
@@ -165,7 +165,7 @@ You should see `replicas: 3`.
 
 Now let's create `env/prod.nix`:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
@@ -203,7 +203,7 @@ In a large project with many shared modules, it's easy for two modules to set th
 
 Let's update `flake.nix` once more to include all three environments. I'll add the Traefik module to the shared list at the same time:
 
-```nix
+```nix linenums="1"
 nixidyEnvs = nixidy.lib.mkEnvs {
   inherit pkgs;
   modules = [
@@ -224,7 +224,7 @@ Most Kubernetes software ships as Helm charts and refusing to use them means mai
 
 Let's add Traefik as a second application. Create `modules/traefik.nix`:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   applications.traefik = {

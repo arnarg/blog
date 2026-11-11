@@ -82,7 +82,7 @@ MINSTOP=hwmon1/pwm3=12
 
 After that you can simply run `fancontrol`. Most distros provide a service file for systemd or whatever init system you're using. NixOS, however, doesn't so in your `/etc/nixos/configuration.nix` you can include the following.
 
-```nix
+```nix linenums="1"
 systemd.services.fancontrol = {
   enable = true;
   description = "Fan control";
@@ -126,7 +126,7 @@ So, running `echo 1 > /dev/hddled2` will turn LED 2 green. The module does not h
 
 I'm not gonna go too deep into packaging for Nix but I will show a working derivation below. I recommend reading [Nix pills][8] if you're interested in learning Nix.
 
-```nix
+```nix linenums="1"
 { stdenv, fetchFromGitHub, kernel }:
 
 stdenv.mkDerivation rec {
@@ -180,7 +180,7 @@ in {
 
 To install Plex Media Server you must include the following in your `/etc/nixos/configuration.nix`.
 
-```nix
+```nix linenums="1"
 # Plex has an unfree license
 nixpkgs.config.allowUnfree = true;
 

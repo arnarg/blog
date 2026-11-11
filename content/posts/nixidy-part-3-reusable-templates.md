@@ -37,7 +37,7 @@ A template has two parts: `options` and `output`. The `options` block declares w
 
 Let's create `modules/templates.nix`:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   templates.webApp = {
@@ -127,7 +127,7 @@ A shared module (like `modules/nginx.nix` from [Part 2](/posts/nixidy-part-2-mul
 
 Now let's add `modules/templates.nix` to the shared `modules` list in `flake.nix`:
 
-```nix
+```nix linenums="1"
       nixidyEnvs = nixidy.lib.mkEnvs {
         inherit pkgs;
         modules = [
@@ -145,7 +145,7 @@ Now let's add `modules/templates.nix` to the shared `modules` list in `flake.nix
 
 Now let's create a new application module that uses the template. Create `modules/webapps.nix`:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   applications.frontend = {
@@ -217,7 +217,7 @@ result
 
 Template output is regular nixidy resources and I can override individual fields the same way I'd override a shared module. If the frontend needs a memory limit that the template doesn't expose as an option:
 
-```nix
+```nix linenums="1"
 applications.frontend = {
   namespace = "frontend";
   createNamespace = true;

@@ -77,7 +77,7 @@ nixidy ships a generator called [`fromCRD`](https://nixidy.dev/user_guide/typed_
 
 Let's generate types for Cilium's `CiliumNetworkPolicy`. Let's add the generator to `flake.nix`:
 
-```nix
+```nix linenums="1"
 {
   description = "My Kubernetes cluster managed with nixidy";
 
@@ -158,7 +158,7 @@ Then register it via `nixidy.applicationImports` in one of the shared modules. F
 
 Now the Cilium network policy resource is available with full type safety. Let's create `modules/cilium-policies.nix`:
 
-```nix
+```nix linenums="1"
 { lib, ... }:
 {
   applications.network-policies = {
@@ -214,7 +214,7 @@ spec:
 
 `fromCRD` generates a file you build, copy, and import. The module accessor `fromCRDModule` returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the `generators` argument in nixidy modules:
 
-```nix
+```nix linenums="1"
 { generators, ... }:
 {
   nixidy.applicationImports = [
@@ -241,7 +241,7 @@ Some CRDs are only available inside Helm charts, or it's preferable to keep them
 
 As an example, let's generate types for cert-manager's `Certificate` CRD:
 
-```nix
+```nix linenums="1"
 packages.generators.cert-manager =
   nixidy.packages.${system}.generators.fromChartCRD {
     name = "cert-manager";
@@ -268,7 +268,7 @@ The workflow is the same: `nix build .#generators.cert-manager`, copy the output
 
 Like `fromCRD` has `fromCRDModule`, `fromChartCRD` has `fromChartCRDModule` which also returns a module value instead of a generated file:
 
-```nix
+```nix linenums="1"
 { generators, ... }:
 {
   nixidy.applicationImports = [
@@ -293,7 +293,7 @@ Two operators might define a CRD with the same `kind`, two different `Database` 
 
 The `fromCRD` generator accepts a `namePrefix` to disambiguate:
 
-```nix
+```nix linenums="1"
 generators.postgres = nixidy.packages.${system}.generators.fromCRD {
   name = "postgres-operator";
   namePrefix = "postgres";
@@ -313,7 +313,7 @@ This produces `resources.postgresDatabases` and `resources.mysqlDatabases` with 
 
 The key on the left side is not the CRD's `kind`, it's the plural name followed by the API group, exactly as it appears in the CRD's `spec.names.plural` and `spec.group` fields. For example, a Keycloak Crossplane provider might ship two CRDs that both resolve to the plural `groups` under different sub-groups, producing a collision on `resources.groups`. The override disambiguates:
 
-```nix
+```nix linenums="1"
 generators.keycloak = nixidy.packages.${system}.generators.fromCRD {
   name = "keycloak";
   src = pkgs.fetchFromGitHub { /* ... */ };

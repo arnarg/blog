@@ -44,7 +44,7 @@ With the help of a couple of libraries (they had to be audited as well) it was r
 
 All it needs is a YAML config file similar to the following:
 
-```yaml
+```yaml linenums="1"
 device: /dev/input/event0 # Path to the input device to be read
 rebinds:
   # Binds KEY_GRAVE to KEY_ESC

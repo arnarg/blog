@@ -37,7 +37,7 @@ The core idea: Nix files change on `main`, CI renders them to YAML, and the YAML
 
 Let's create `.github/workflows/promote-dev.yaml`:
 
-```yaml
+```yaml linenums="1"
 name: Promote to dev
 
 on:
