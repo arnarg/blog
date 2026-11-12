@@ -23,6 +23,15 @@ article {
   figure > figcaption {
     @apply text-center;
   }
+
+  /* Make wide tables scroll horizontally instead of overflowing the
+     page on small screens (same approach GitHub uses). */
+  table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
 }
 
 div[class="highlight"] {
@@ -30,6 +39,10 @@ div[class="highlight"] {
 	border-radius: 6px;
 
 	& pre {
+		/* Typography forces a dark pre background even in light mode. Let
+		   the pygments style on .highlight provide the colorscheme instead. */
+		background-color: transparent;
+		color: inherit;
 		line-height: 125%;
 	}
 }
