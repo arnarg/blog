@@ -21,5 +21,8 @@
     "postcss": "^8.4.35",
     "postcss-cli": "^11.0.0",
     "tailwindcss": "^3.4.1"
+  },
+  "resolutions": {
+    "@tailwindcss/typography/postcss-selector-parser": "^6.1.5"
   }
 }
