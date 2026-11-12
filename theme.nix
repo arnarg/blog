@@ -612,7 +612,15 @@ in
 
   website.content.processors.md = {
     settings.highlight = {
-      style = "gruvbox-dark-medium";
+      # Light scheme by default, dark scheme when the user prefers dark mode,
+      # matching Tailwind's media based dark: variant.
+      style = [
+        { name = "gruvbox-light-medium"; }
+        {
+          name = "gruvbox-dark-medium";
+          media = "prefers-color-scheme: dark";
+        }
+      ];
       noclasses = false;
       linenumsStyle = "pymdownx-inline";
     };
