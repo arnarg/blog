@@ -1538,6 +1538,22 @@ div[class="highlight"] {
   position: relative;
 	border-radius: 6px;
 
+	/* On small screens, run code blocks to the edge of the screen through
+	   the page's side padding (px-4). The code keeps its own 1rem padding,
+	   so it lines up with the text around it. */
+}
+
+@media not all and (min-width: 640px) {
+
+  div[class="highlight"] {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0px;
+  }
+}
+
+div[class="highlight"] {
+
 	& pre {
 		/* Typography forces a dark pre background even in light mode. Let
 		   the pygments style on .highlight provide the colorscheme instead. */
@@ -1618,6 +1634,17 @@ div[class="highlight"] {
 	--copy-code-offset: calc(0.8571429em + 0.5lh - var(--copy-code-size) / 2);
 	top: var(--copy-code-offset);
 	right: var(--copy-code-offset);
+	/* Keep it clear of the screen edge when code blocks run full width. */
+}
+
+@media not all and (min-width: 640px) {
+
+  .copy-code-button {
+    right: calc(var(--copy-code-offset) + 0.5rem);
+  }
+}
+
+.copy-code-button {
 	width: var(--copy-code-size);
 	height: var(--copy-code-size);
 	font-size: 0.875em;
