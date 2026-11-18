@@ -84,11 +84,12 @@ systemd<span class="o">.</span>services<span class="o">.</span>sshd<span class="
 </code></pre></div>
 					<h3 id="why-is-my-cpu-overheating">Why is my CPU overheating?</h3>
 					<p>When opening the case and unplugging the fan you may notice that the fan is connected to a header marked on the PCB as <code>SYS_FAN2</code>. Well, a fan connected to this header does not spin up when the CPU heats up. It's only a 10W CPU but it can get quite hot if under load for a while uncooled. Naturally I turned to <code>lm_sensors</code>.</p>
-					<blockquote>
+					<div class="admonition note">
+						<p class="admonition-title">Note</p>
 						<p><code>nix-shell -p lm_sensors</code>
 						will give you a new shell where lm_sensors is installed and its executables in path. When you exit this shell none of lm_sensors' executables are in path and it will be removed completely from the system next time <code>nix-collect-garbage</code>
 						is run.</p>
-					</blockquote>
+					</div>
 					<p>Running <code>sensors-detect</code>
 						revealed that the Super I/O chip on the system is <code>IT8613E</code>
 						which the module <a href="https://github.com/hannesha/it87">it87</a>
@@ -204,7 +205,7 @@ boot<span class="o">.</span><span class="ss">kernelModules</span> <span class="o
 </code></pre></div>
 					<h3 id="plex-media-server">Plex Media Server</h3>
 					<p>To install Plex Media Server you must include the following in your <code>/etc/nixos/configuration.nix</code>.</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="c1"># Plex has an unfree license</span>
+					<div class="highlight"><span class="filename">/etc/nixos/configuration.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="c1"># Plex has an unfree license</span>
 <span class="linenos" data-linenos=" 2 "></span>nixpkgs<span class="o">.</span>config<span class="o">.</span><span class="ss">allowUnfree</span> <span class="o">=</span> <span class="no">true</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>
 <span class="linenos" data-linenos=" 4 "></span><span class="c1"># For hardware transcoding</span>

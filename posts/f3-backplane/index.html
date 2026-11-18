@@ -265,9 +265,10 @@
 						</tbody>
 					</table>
 					<p>After having figured out this pinout I roughly verified the pinout of PCIe1 by bringing a picture of the F5-422 backplane into Kicad and routing the external traces to the vias that I can see and then attempt to route them on an internal layer, then assume I was incorrect in my pinout and attempt to route different combinations. My initial guess was the one that was easiest to route between the vias so I was fairly (-ish) confident in that I was correct.</p>
-					<blockquote>
+					<div class="admonition note">
+						<p class="admonition-title">Note</p>
 						<p>You may also have noticed that some of the pins are marked <code>?</code>. Most of these pins were not connected on my backplane and/or I could not figure out where they were routed to as those were also mostly routed on internal layers.</p>
-					</blockquote>
+					</div>
 					<h3 id="power-circuits">Power circuits</h3>
 					<p>As stated earlier, there are no ICs on the F2-221's backplane that handle any PCIe signals, but one side of the PCB is full of components. After taking close-up pictures of the PCB so that I could identify the components and see where the traces go between them I recreated the schematic in Kicad. This circuit consisted of mostly mostfets, diodes, resistors and capacitors. Now, I am no electrical engineer but after staring at the schematic, trying to break it apart into chunks to make sense of it and doing a lot of research online I somehow figured that these were load switches with a slow starter, one for each power rail on each SATA port (meaning 4 load switches on F2-221 and 10 on the F5-422). One of the ground pins (P4) on the SATA connectors was also used as the enable pin for these load switches, as it's pulled to ground by the hard drive when connected. I figured this was done in combination with the slow start circuit to make hot-plugging the hard drives safe by preventing sparking across the connector and the drive due to the high initial inrush current.</p>
 					<p>Not being too eager to solder all these discrete components on my backplane PCB, I decided to find a complete integrated load switch IC with a built-in slow starter and finally went with the <a href="https://www.onsemi.com/products/power-management/protected-power-switches/ncp45521">onsemi NCP45521-L</a>.</p>
@@ -317,9 +318,10 @@
 					<p><img alt="Picture of the final version of the backplane PCB mounted in the NAS." src="/images/posts/f3-backplane/f3-backplane-hero.jpg"></p>
 					<p><img alt="Picture of the front of the new backplane PCB next to the original one." src="/images/posts/f3-backplane/f3-comparison-front.jpg"></p>
 					<p><img alt="Picture of the back of the new backplane PCB next to the original one." src="/images/posts/f3-backplane/f3-comparison-back.jpg"></p>
-					<blockquote>
+					<div class="admonition note">
+						<p class="admonition-title">Note</p>
 						<p>The soldering of the SATA connectors is kind of rough because I had forgotten to add thermal reliefs to the internal ground plane, making soldering very difficult. This has been fixed in the GitHub repository.</p>
-					</blockquote>
+					</div>
 					<p>hdparm test results for the NVMe SSD:</p>
 					<div class="highlight"><pre><span></span><code>/dev/nvme0n1:
  Timing cached reads:   4554 MB in  2.00 seconds = 2279.68 MB/sec

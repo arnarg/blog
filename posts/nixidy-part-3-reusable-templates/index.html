@@ -76,8 +76,8 @@
 						and <code>api</code>) instantiated from the template with different images, ports, and replica counts.</p>
 					<h2 id="prerequisites">Prerequisites</h2>
 					<ul>
-						<li><a href="/posts/nixidy-part-1-introduction/">Parts 1</a>
-						and <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>
+						<li><a href="../nixidy-part-1-introduction/">Parts 1</a>
+						and <a href="../nixidy-part-2-multi-env-and-helm-charts/">2</a>
 						complete: you have a multi-environment project with shared modules</li>
 						<li>The same toolchain: <strong>Nix</strong>
 							and <strong>nixidy</strong></li>
@@ -90,7 +90,7 @@
 						block is a function that receives the instance's <code>name</code>
 						and resolved <code>config</code>, and returns a set of nixidy resources.</p>
 					<p>Let's create <code>modules/templates.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+					<div class="highlight"><span class="filename">modules/templates.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 3 "></span>  templates<span class="o">.</span><span class="ss">webApp</span> <span class="o">=</span> <span class="p">{</span>
 <span class="linenos" data-linenos=" 4 "></span>    <span class="ss">options</span> <span class="o">=</span> <span class="p">{</span>
@@ -179,7 +179,7 @@
 					<div class="admonition tip">
 						<p class="admonition-title">Templates vs. shared modules</p>
 						<p>A shared module (like <code>modules/nginx.nix</code>
-							from <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>) defines <em>one</em>
+							from <a href="../nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>) defines <em>one</em>
 							application's resources and lets environments override specific fields. A template defines a <em>pattern</em>
 							(Deployment + Service + Ingress) and lets you instantiate it N times with different parameters. If you have one nginx, use a shared module. If you have five web applications that all follow the same Deployment-Service-Ingress shape, use a template.</p>
 					</div>
@@ -187,7 +187,7 @@
 					<p>Now let's add <code>modules/templates.nix</code>
 						to the shared <code>modules</code>
 						list in <code>flake.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>      <span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>      <span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
 <span class="linenos" data-linenos=" 2 "></span>        <span class="k">inherit</span> pkgs<span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>        <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
 <span class="linenos" data-linenos=" 4 "></span>          <span class="l">./modules/templates.nix</span>
@@ -202,7 +202,7 @@
 <span class="linenos" data-linenos="13 "></span>      <span class="p">};</span>
 </code></pre></div>
 					<p>Now let's create a new application module that uses the template. Create <code>modules/webapps.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+					<div class="highlight"><span class="filename">modules/webapps.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">frontend</span> <span class="o">=</span> <span class="p">{</span>
 <span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;frontend&quot;</span><span class="p">;</span>
@@ -245,10 +245,10 @@
 						instance, <code>ingressHost</code>
 						is left at its default (<code>null</code>), so no Ingress is generated and the API is cluster-internal. <code>replicas = lib.mkDefault 2</code>
 						means environments can override it with a plain assignment (priority <code>100</code>
-						beats the default <code>1000</code>), same composition mechanism from <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>.</p>
+						beats the default <code>1000</code>), same composition mechanism from <a href="../nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>.</p>
 					<p>Let's add <code>modules/webapps.nix</code>
 						to the shared modules in <code>flake.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
   <span class="l">./modules/templates.nix</span>
   <span class="l">./modules/webapps.nix</span>
   <span class="l">./modules/nginx.nix</span>
@@ -331,7 +331,7 @@ cat<span class="w"> </span>result/frontend/Deployment-frontend.yaml
 <span class="w">              </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64Mi</span>
 </code></pre></div>
 					<h2 id="whats-next">What's next</h2>
-					<p>Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In <a href="/posts/nixidy-part-4-typed-resource-options/">part 4</a>
+					<p>Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In <a href="../nixidy-part-4-typed-resource-options/">part 4</a>
 						I'll cover how to generate typed resource options from CRDs (both plain YAML files and a Helm chart), so that we can define and override <code>CiliumNetworkPolicies</code>, cert-manager's <code>Certificates</code>
 						or prometheus <code>ServiceMonitors</code>
 						in <code>applications.&lt;name&gt;.resources</code>.</p>

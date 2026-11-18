@@ -61,7 +61,7 @@
 						</a>
 					</div>
 
-					<p>In <a href="/posts/nixidy-part-1-introduction/">the previous part</a>
+					<p>In <a href="../nixidy-part-1-introduction/">the previous part</a>
 						we created a single nixidy application. The nginx <code>Deployment</code>
 						in <code>dev.nix</code>
 						is 20 lines. When I add <code>staging.nix</code>
@@ -79,14 +79,14 @@
 						and <code>lib.mkForce</code>. We'll also add a second application, Traefik, rendered from an upstream Helm chart with nixidy-managed patches.</p>
 					<h2 id="prerequisites">Prerequisites</h2>
 					<ul>
-						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>
+						<li><a href="../nixidy-part-1-introduction/">Part 1</a>
 						complete: you have a working nixidy project with <code>env/dev.nix</code></li>
 						<li>The same toolchain: <strong>Nix</strong>
 							and <strong>nixidy</strong></li>
 					</ul>
 					<h2 id="refactor-the-nginx-application-into-a-shared-module">Refactor the nginx application into a shared module</h2>
 					<p>The nginx definition currently lives inline in <code>env/dev.nix</code>. Let's pull it out into its own module so every environment can import it. Create <code>modules/nginx.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+					<div class="highlight"><span class="filename">modules/nginx.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">nginx</span> <span class="o">=</span> <span class="p">{</span>
 <span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;nginx&quot;</span><span class="p">;</span>
@@ -113,10 +113,10 @@
 <span class="linenos" data-linenos="25 "></span>  <span class="p">};</span>
 <span class="linenos" data-linenos="26 "></span><span class="p">}</span>
 </code></pre></div>
-					<p>One change from <a href="/posts/nixidy-part-1-introduction/">Part 1</a>: <code>replicas = 2</code>
+					<p>One change from <a href="../nixidy-part-1-introduction/">Part 1</a>: <code>replicas = 2</code>
 						became <code>replicas = lib.mkDefault 2</code>. This sets the default priority, so any module that imports this one can override it with a plain assignment or with <code>lib.mkForce</code>.</p>
 					<div class="admonition tip">
-						<p class="admonition-title">tip</p>
+						<p class="admonition-title">Tip</p>
 						<p>The NixOS module system has three priority tiers you'll use constantly: <code>lib.mkDefault</code>
 							(<code>1000</code>, which is easily overridden), a plain value (<code>100</code>, which is the normal priority), and <code>lib.mkForce</code>
 							(<code>50</code>, which wins against everything). Two modules setting the same option at the same priority is an error and the system forces you to be explicit about which one wins.</p>
@@ -124,7 +124,7 @@
 					<p>Now I need to update <code>flake.nix</code>
 						to pull in the shared module via <code>mkEnvs</code>'s <code>modules</code>
 						list:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 2 "></span>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;My Kubernetes cluster managed with nixidy&quot;</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>
 <span class="linenos" data-linenos=" 4 "></span>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
@@ -157,7 +157,7 @@
 					<p>Then I can rewrite <code>env/dev.nix</code>
 						(no import needed, since <code>flake.nix</code>
 						already handles it):</p>
-					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+					<div class="highlight"><span class="filename">env/dev.nix</span><pre><span></span><code><span class="p">{</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/dev&quot;</span><span class="p">;</span>
@@ -167,13 +167,13 @@
 					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
 tree<span class="w"> </span>result
 </code></pre></div>
-					<p>The output is identical to <a href="/posts/nixidy-part-1-introduction/">Part 1</a>
+					<p>The output is identical to <a href="../nixidy-part-1-introduction/">Part 1</a>
 						(four files, same content). The module system merged the shared definition with the (empty) dev-specific overrides and produced the same result.</p>
 					<h2 id="a-staging-environment-with-a-different-replica-count">A staging environment with a different replica count</h2>
 					<p>Now let's add a second environment. The shared modules list in <code>flake.nix</code>
 						already covers nginx, so <code>env/staging.nix</code>
 						only needs environment-specific config:</p>
-					<div class="highlight"><pre><span></span><code><span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
   <span class="k">inherit</span> pkgs<span class="p">;</span>
   <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span> <span class="l">./modules/nginx.nix</span> <span class="p">];</span>
   <span class="ss">envs</span> <span class="o">=</span> <span class="p">{</span>
@@ -183,7 +183,7 @@ tree<span class="w"> </span>result
 <span class="p">};</span>
 </code></pre></div>
 					<p>Let's create <code>env/staging.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+					<div class="highlight"><span class="filename">env/staging.nix</span><pre><span></span><code><span class="p">{</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/staging&quot;</span><span class="p">;</span>
@@ -200,7 +200,7 @@ cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </
 					<p>You should see <code>replicas: 3</code>.</p>
 					<h2 id="a-production-environment-with-forced-overrides">A production environment with forced overrides</h2>
 					<p>Now let's create <code>env/prod.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+					<div class="highlight"><span class="filename">env/prod.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 4 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
@@ -242,7 +242,7 @@ cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </
 					</div>
 					<p>Let's update <code>flake.nix</code>
 						once more to include all three environments. I'll add the Traefik module to the shared list at the same time:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="ss">nixidyEnvs</span> <span class="o">=</span> nixidy<span class="o">.</span>lib<span class="o">.</span>mkEnvs <span class="p">{</span>
 <span class="linenos" data-linenos=" 2 "></span>  <span class="k">inherit</span> pkgs<span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>  <span class="ss">modules</span> <span class="o">=</span> <span class="p">[</span>
 <span class="linenos" data-linenos=" 4 "></span>    <span class="l">./modules/nginx.nix</span>
@@ -258,7 +258,7 @@ cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </
 					<h2 id="a-helm-chart-integrated-as-a-nixidy-application">A Helm chart integrated as a nixidy application</h2>
 					<p>Most Kubernetes software ships as Helm charts and refusing to use them means maintaining hundreds of lines of Kubernetes resources by hand. nixidy can render Helm charts at build time and make the output available as typed resources that can be patched.</p>
 					<p>Let's add Traefik as a second application. Create <code>modules/traefik.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+					<div class="highlight"><span class="filename">modules/traefik.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">traefik</span> <span class="o">=</span> <span class="p">{</span>
 <span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;traefik&quot;</span><span class="p">;</span>
@@ -293,7 +293,7 @@ cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </
 						Helm rendering. The Helm chart produces the Traefik Deployment, nixidy parses it into typed resources, and you override the container image with <code>lib.mkForce</code>.</li>
 					</ul>
 					<div class="admonition warning">
-						<p class="admonition-title">warning</p>
+						<p class="admonition-title">Warning</p>
 						<p>The <code>chartHash</code>
 							is critical. It's the SHA-256 of the <code>.tgz</code>
 							archive. If you change <code>version</code>
@@ -306,7 +306,7 @@ cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </
 						list in <code>flake.nix</code>
 						already covers nginx and Traefik, so <code>env/dev.nix</code>
 						stays minimal:</p>
-					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+					<div class="highlight"><span class="filename">env/dev.nix</span><pre><span></span><code><span class="p">{</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
   nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/dev&quot;</span><span class="p">;</span>
@@ -334,7 +334,7 @@ cat<span class="w"> </span>result/nginx/Deployment-nginx.yaml<span class="w"> </
 					<p>Each environment file contains only target configuration and environment-specific overrides. The shared application modules live in <code>flake.nix</code>'s <code>modules</code>
 						list, which feeds them into every environment automatically. Adding a fourth environment is just creating one new file with target config and overrides.</p>
 					<h2 id="whats-next">What's next</h2>
-					<p>Now we have three environments with a nixidy defined application and a Helm chart. But the nginx application is still defined from scratch while real clusters have recurring patterns: a web app that always gets a Deployment, a Service, and an Ingress with the same shape. <a href="/posts/nixidy-part-3-reusable-templates/">Part 3</a>
+					<p>Now we have three environments with a nixidy defined application and a Helm chart. But the nginx application is still defined from scratch while real clusters have recurring patterns: a web app that always gets a Deployment, a Service, and an Ingress with the same shape. <a href="../nixidy-part-3-reusable-templates/">Part 3</a>
 						covers nixidy's template system, which lets us define that pattern once with typed options and instantiate it across applications with different images, ports, and replica counts.</p>
 				</article>
 			</main>

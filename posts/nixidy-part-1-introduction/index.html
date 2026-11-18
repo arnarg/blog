@@ -89,7 +89,7 @@
 						resources</li>
 					</ul>
 					<div class="admonition info">
-						<p class="admonition-title">info</p>
+						<p class="admonition-title">Info</p>
 						<p>nixidy implements the <a href="https://akuity.io/blog/the-rendered-manifests-pattern/">Rendered Manifests Pattern</a>
 							where your CI generates plain YAML, you review it in PRs, and Argo CD deploys it. If you've used Argo CD with raw YAML or Kustomize before, the deployment side is identical. The difference is entirely in <em>how the YAML is produced</em>.</p>
 					</div>
@@ -103,7 +103,7 @@
 git<span class="w"> </span>init
 </code></pre></div>
 					<p>Now create <code>flake.nix</code>, this is the entry point that wires nixidy into your Nix flake:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 2 "></span>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;My Kubernetes cluster managed with nixidy&quot;</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>
 <span class="linenos" data-linenos=" 4 "></span>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
@@ -137,7 +137,7 @@ git<span class="w"> </span>init
 							files that set options. This is the same module system that powers NixOS, which means you get <code>imports</code>, <code>lib.mkDefault</code>, <code>lib.mkForce</code>, and all the composition primitives you'd expect.</li>
 					</ul>
 					<div class="admonition info">
-						<p class="admonition-title">info</p>
+						<p class="admonition-title">Info</p>
 						<p>If you've configured a NixOS system before, the shape is identical: a list of modules that set options, merged by the module system. The difference is that the options describe Kubernetes resources instead of system services.</p>
 					</div>
 					<h2 id="an-environment-module-with-one-application">An environment module with one application</h2>
@@ -145,7 +145,7 @@ git<span class="w"> </span>init
 					<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>-p<span class="w"> </span>env
 </code></pre></div>
 					<p>Write <code>env/dev.nix</code>. Make sure to replace the repository URL with your own (this is where nixidy will tell Argo CD to look for rendered manifests):</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+					<div class="highlight"><span class="filename">env/dev.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 2 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">repository</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/YOUR_USERNAME/my-cluster.git&quot;</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">branch</span> <span class="o">=</span> <span class="s2">&quot;main&quot;</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 4 "></span>  nixidy<span class="o">.</span>target<span class="o">.</span><span class="ss">rootPath</span> <span class="o">=</span> <span class="s2">&quot;./manifests/dev&quot;</span><span class="p">;</span>
@@ -192,7 +192,7 @@ git<span class="w"> </span>init
 					<div class="admonition info">
 						<p class="admonition-title">Why not just write the YAML?</p>
 						<p>Two reasons.</p>
-						<ol>
+						<ol type="1">
 							<li>Type errors become build errors. Set <code>replicas = "two"</code>
 								in the module above and <code>nixidy build</code>
 								fails immediately, not 15 minutes into a deployment rollout.</li>
@@ -205,7 +205,7 @@ git<span class="w"> </span>init
 					<div class="highlight"><pre><span></span><code>nix<span class="w"> </span>run<span class="w"> </span>github:arnarg/nixidy/latest<span class="w"> </span>--<span class="w"> </span>build<span class="w"> </span>.#dev
 </code></pre></div>
 					<div class="admonition info">
-						<p class="admonition-title">info</p>
+						<p class="admonition-title">Info</p>
 						<p>The first run downloads nixidy and its dependencies into the Nix store. Subsequent runs are instant if nothing changed.</p>
 					</div>
 					<p>Inspect the output:</p>
@@ -297,7 +297,7 @@ git<span class="w"> </span>push
 					<p>This runs <code>kubectl apply --prune</code>
 						with the correct label selectors, so resources removed from your nixidy config are also removed from the cluster on the next apply (if resources have been removed).</p>
 					<h2 id="whats-next">What's next</h2>
-					<p>We now have one application in one environment. Real clusters have a dozen applications across dev, staging, and production and I don't want to copy-paste the same Deployment into three files. In <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>
+					<p>We now have one application in one environment. Real clusters have a dozen applications across dev, staging, and production and I don't want to copy-paste the same Deployment into three files. In <a href="../nixidy-part-2-multi-env-and-helm-charts/">Part 2</a>
 						we'll refactor the nginx application into a shared module, override <code>replicas</code>
 						per environment with <code>lib.mkDefault</code>
 						and <code>lib.mkForce</code>, and integrate a Helm chart without giving up type safety.</p>

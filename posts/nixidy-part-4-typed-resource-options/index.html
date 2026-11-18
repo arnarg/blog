@@ -73,8 +73,8 @@
 						generator. Plus an understanding of when to use typed resources vs. raw YAML vs. Helm output.</p>
 					<h2 id="prerequisites">Prerequisites</h2>
 					<ul>
-						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>
-						and <a href="/posts/nixidy-part-3-reusable-templates/">3</a>
+						<li><a href="../nixidy-part-1-introduction/">Part 1</a>, <a href="../nixidy-part-2-multi-env-and-helm-charts/">2</a>
+						and <a href="../nixidy-part-3-reusable-templates/">3</a>
 						complete</li>
 						<li>The same toolchain: <strong>Nix</strong>
 							and <strong>nixidy</strong></li>
@@ -116,12 +116,12 @@ resources.&quot;networking.k8s.io&quot;.v1.Ingress
 							</tr>
 						</tbody>
 					</table>
-					<p>We've been using these aliases throughout <a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>
-						and <a href="/posts/nixidy-part-3-reusable-templates/">3</a>. The aliases resolve to the same typed options, so <code>resources.services.nginx</code>
+					<p>We've been using these aliases throughout <a href="../nixidy-part-1-introduction/">Part 1</a>, <a href="../nixidy-part-2-multi-env-and-helm-charts/">2</a>
+						and <a href="../nixidy-part-3-reusable-templates/">3</a>. The aliases resolve to the same typed options, so <code>resources.services.nginx</code>
 						and <code>resources.core.v1.Service.nginx</code>
 						produce identical output.</p>
 					<div class="admonition info">
-						<p class="admonition-title">info</p>
+						<p class="admonition-title">Info</p>
 						<p>The alias is the plural camelCase of the <code>kind</code>
 							field, not the <code>resources</code>
 							field from the Kubernetes API. <code>CronJob</code>
@@ -134,7 +134,7 @@ resources.&quot;networking.k8s.io&quot;.v1.Ingress
 						would catch, but at Nix evaluation time, which is faster and doesn't require cluster access.</p>
 					<h2 id="what-happens-to-untyped-resources">What happens to untyped resources</h2>
 					<p>Not every resource has typed options. CRDs from third-party operators (Cilium, cert-manager, Prometheus) aren't included by default. Resources without typed options fall into three categories:</p>
-					<ol>
+					<ol type="1">
 						<li><strong>Rendered by Helm</strong>: nixidy parses Helm chart output into typed resources where types exist. Untyped resources pass through to the output as-is. We can't patch them via <code>resources.*</code>, but they appear in the final manifests.</li>
 						<li><strong>Included via <code>yamls</code></strong>: nixidy parses these into typed resources the same way. Untyped resources pass through.</li>
 						<li><strong>Included via <code>extraRawYamls</code></strong>: these are copied verbatim. nixidy never parses them, never strips fields, never attempts to type-check. This is the escape hatch for <a href="https://github.com/getsops/sops">SOPS</a>-encrypted manifests and other resources with non-standard structure.</li>
@@ -145,7 +145,7 @@ resources.&quot;networking.k8s.io&quot;.v1.Ingress
 						that reads a CRD YAML file and produces a Nix module with typed options for that resource. The generated module integrates into nixidy via <code>nixidy.applicationImports</code>. Once imported, the CRD's resources become available under <code>resources.*</code>
 						with full type checking.</p>
 					<p>Let's generate types for Cilium's <code>CiliumNetworkPolicy</code>. Let's add the generator to <code>flake.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
+					<div class="highlight"><span class="filename">flake.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 2 "></span>  <span class="ss">description</span> <span class="o">=</span> <span class="s2">&quot;My Kubernetes cluster managed with nixidy&quot;</span><span class="p">;</span>
 <span class="linenos" data-linenos=" 3 "></span>
 <span class="linenos" data-linenos=" 4 "></span>  <span class="ss">inputs</span> <span class="o">=</span> <span class="p">{</span>
@@ -205,12 +205,12 @@ cp<span class="w"> </span>result<span class="w"> </span>generated/cilium.nix
 					<p>Then register it via <code>nixidy.applicationImports</code>
 						in one of the shared modules. For example, add to <code>modules/nginx.nix</code>
 						or create a dedicated <code>modules/crd-imports.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="p">{</span>
+					<div class="highlight"><span class="filename">modules/crd-imports.nix</span><pre><span></span><code><span class="p">{</span>
   nixidy<span class="o">.</span><span class="ss">applicationImports</span> <span class="o">=</span> <span class="p">[</span> <span class="l">../generated/cilium.nix</span> <span class="p">];</span>
 <span class="p">}</span>
 </code></pre></div>
 					<div class="admonition warning">
-						<p class="admonition-title">warning</p>
+						<p class="admonition-title">Warning</p>
 						<p><code>nixidy.applicationImports</code>
 						is different from the shared <code>modules</code>
 						list in <code>flake.nix</code>. The shared <code>modules</code>
@@ -219,7 +219,7 @@ cp<span class="w"> </span>result<span class="w"> </span>generated/cilium.nix
 						module system, meaning it makes the generated resource types available inside <code>applications.&lt;name&gt;.resources.*</code>. If you put the import in the wrong place, the types won't be visible and you'll get "attribute missing" errors.</p>
 					</div>
 					<p>Now the Cilium network policy resource is available with full type safety. Let's create <code>modules/cilium-policies.nix</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
+					<div class="highlight"><span class="filename">modules/cilium-policies.nix</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="p">{</span> lib<span class="p">,</span> <span class="o">...</span> <span class="p">}:</span>
 <span class="linenos" data-linenos=" 2 "></span><span class="p">{</span>
 <span class="linenos" data-linenos=" 3 "></span>  applications<span class="o">.</span><span class="ss">network-policies</span> <span class="o">=</span> <span class="p">{</span>
 <span class="linenos" data-linenos=" 4 "></span>    <span class="ss">namespace</span> <span class="o">=</span> <span class="s2">&quot;kube-system&quot;</span><span class="p">;</span>
@@ -311,7 +311,7 @@ cat<span class="w"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns
 					<p>The workflow is the same: <code>nix build .#generators.cert-manager</code>, copy the output into <code>generated/</code>, and register via <code>nixidy.applicationImports</code>. The <code>crds</code>
 						list is optional, leave it empty to generate types for all CRDs the chart produces.</p>
 					<div class="admonition info">
-						<p class="admonition-title">info</p>
+						<p class="admonition-title">Info</p>
 						<p><code>fromChartCRD</code>
 						also handles CRDs that contain Helm templating within their definitions, something <code>fromCRD</code>
 						can't process because it reads raw YAML from the source tree rather than rendering a chart.</p>
@@ -391,7 +391,7 @@ cat<span class="w"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns
 						can be used without <code>namePrefix</code>
 						if only specific CRDs need renaming, or combined when a prefix is wanted as a default with targeted overrides.</p>
 					<div class="admonition warning">
-						<p class="admonition-title">warning</p>
+						<p class="admonition-title">Warning</p>
 						<p>The left-hand key format is <code>&lt;plural&gt;.&lt;group&gt;</code>. It's easy to get wrong. If the override doesn't take effect, check the CRD YAML's <code>spec.names.plural</code>
 							and <code>spec.group</code>
 							fields and concatenate them with a dot. A mismatch (wrong plural, wrong group, missing sub-group) silently falls back to the auto-generated name.</p>
@@ -410,7 +410,7 @@ cat<span class="w"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns
 						(the direct <code>kubectl</code>
 						path) skips it. Only Argo CD with a SOPS plugin will apply it.</p>
 					<div class="admonition warning">
-						<p class="admonition-title">warning</p>
+						<p class="admonition-title">Warning</p>
 						<p>Basenames in <code>extraRawYamls</code>
 							must be unique within an application and must not collide with typed-resource output filenames (e.g., <code>Secret-myapp.yaml</code>). Both cases produce build-time assertion failures, nixidy catches the conflict before it reaches the cluster.</p>
 					</div>
@@ -471,7 +471,7 @@ cat<span class="w"> </span>result/network-policies/CiliumNetworkPolicy-allow-dns
 						and get build-time validation. If it doesn't, generate the types from the CRD. If generation isn't feasible (encrypted manifests, non-standard structures), fall back to <code>extraRawYamls</code>.</p>
 					<h2 id="whats-next">What's next</h2>
 					<p>Typed resources give me confidence that what I write is what Kubernetes expects in terms of the type of data for each field of a manifest. What it can't ensure is broader requirements such as minimum replicas for some or all deployments or when application A is deployed then application B <em>must</em>
-						also be deployed. In <a href="/posts/nixidy-part-5-assertions-and-warnings/">part 5</a>
+						also be deployed. In <a href="../nixidy-part-5-assertions-and-warnings/">part 5</a>
 						we will cover build-time assertions and warnings which can be used to define such requirements.</p>
 				</article>
 			</main>

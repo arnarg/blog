@@ -76,8 +76,8 @@
 						workflow for comparing environments before pushing.</p>
 					<h2 id="prerequisites">Prerequisites</h2>
 					<ul>
-						<li><a href="/posts/nixidy-part-1-introduction/">Part 1</a>, <a href="/posts/nixidy-part-2-multi-env-and-helm-charts/">2</a>, <a href="/posts/nixidy-part-3-reusable-templates/">3</a>, <a href="/posts/nixidy-part-4-typed-resource-options/">4</a>
-						and <a href="/posts/nixidy-part-5-assertions-and-warnings/">5</a>
+						<li><a href="../nixidy-part-1-introduction/">Part 1</a>, <a href="../nixidy-part-2-multi-env-and-helm-charts/">2</a>, <a href="../nixidy-part-3-reusable-templates/">3</a>, <a href="../nixidy-part-4-typed-resource-options/">4</a>
+						and <a href="../nixidy-part-5-assertions-and-warnings/">5</a>
 						complete</li>
 						<li>The same toolchain: <strong>Nix</strong>
 							and <strong>nixidy</strong></li>
@@ -86,7 +86,7 @@
 					<p>The core idea: Nix files change on <code>main</code>, CI renders them to YAML, and the YAML lands in a PR that a human reviews before it reaches Argo CD. This is the <a href="https://akuity.io/blog/the-rendered-manifests-pattern/">rendered manifests pattern</a>
 						that nixidy is built around. CI is the bridge between "Nix changed" and "YAML is ready to deploy."</p>
 					<p>Let's create <code>.github/workflows/promote-dev.yaml</code>:</p>
-					<div class="highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Promote to dev</span>
+					<div class="highlight"><span class="filename">.github/workflows/promote-dev.yaml</span><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Promote to dev</span>
 <span class="linenos" data-linenos=" 2 "></span>
 <span class="linenos" data-linenos=" 3 "></span><span class="nt">on</span><span class="p">:</span>
 <span class="linenos" data-linenos=" 4 "></span><span class="w">  </span><span class="nt">push</span><span class="p">:</span>
@@ -151,7 +151,7 @@
 						changed to <code>replicas: 5</code>, not the Nix expression that produced it.</li>
 					</ul>
 					<div class="admonition warning">
-						<p class="admonition-title">warning</p>
+						<p class="admonition-title">Warning</p>
 						<p>The <code>arnarg/nixidy/actions/build</code>
 							action requires flakes support even if the project doesn't use flakes, because the action internally uses <code>nix run</code>
 							to invoke the nixidy CLI. That's why <code>extra-experimental-features = nix-command flakes</code>
@@ -190,7 +190,7 @@
 					<p>This builds <code>.#dev</code>
 						and compares it against the YAML already committed in <code>manifests/dev/</code>. If the output is empty, nothing changed and the local Nix edits don't affect the rendered manifests. If it shows changes, those are the exact diffs that will appear in the promotion PR.</p>
 					<div class="admonition tip">
-						<p class="admonition-title">tip</p>
+						<p class="admonition-title">Tip</p>
 						<p><code>nixidy diff</code>
 						is particularly useful before a <code>nixidy switch</code>. Run the diff, review the changes, then switch.</p>
 					</div>
