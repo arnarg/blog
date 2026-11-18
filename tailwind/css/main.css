@@ -45,32 +45,67 @@ div[class="highlight"] {
 		color: inherit;
 		line-height: 125%;
 	}
+
+	/* Title bar for code blocks with a title, e.g. ```nix title="flake.nix". */
+	& .filename {
+		@apply block py-2.5 px-4
+		       font-mono text-sm
+		       text-stone-600 dark:text-stone-400
+		       border-b border-stone-300 dark:border-stone-700
+		       truncate;
+
+		& + pre,
+		& + .copy-code-container > pre {
+			@apply mt-0;
+		}
+	}
+}
+
+/* Added around <pre> by copy-code.js, holding the copy button. Keeps the
+   button below a code block title and in place when the code scrolls. */
+.copy-code-container {
+	@apply relative;
 }
 
 .copy-code-button {
-	@apply absolute top-1.5 right-2 z-10
-	       inline-flex h-7 w-7 items-center justify-center p-1
-	       rounded border border-stone-300
-	       bg-stone-100/90 text-stone-600 shadow-sm
-	       cursor-pointer transition-colors duration-150
-	       hover:bg-stone-200 hover:text-stone-900
-	       dark:border-stone-600
-	       dark:bg-stone-800/90 dark:text-stone-200
-	       dark:hover:bg-stone-700 dark:hover:text-white
-	       focus-visible:outline-none focus-visible:ring-2
-	       focus-visible:ring-sky-500 focus-visible:ring-offset-2
-	       focus-visible:ring-offset-stone-100
-	       dark:focus-visible:ring-sky-400
-	       dark:focus-visible:ring-offset-stone-800
-	       disabled:cursor-wait disabled:opacity-70;
+	/* Centered on the first line of code, with the same space on the right.
+	   With the font size and line height of <pre>, `em` and `lh` match those
+	   of the code, whose top padding comes from the typography plugin. */
+	--copy-code-size: 1.875rem;
+	--copy-code-offset: calc(0.8571429em + 0.5lh - var(--copy-code-size) / 2);
+	top: var(--copy-code-offset);
+	right: var(--copy-code-offset);
+	width: var(--copy-code-size);
+	height: var(--copy-code-size);
+	font-size: 0.875em;
+	line-height: 125%;
+
+	@apply absolute z-10
+	       inline-flex items-center justify-center p-0
+	       rounded border border-stone-300 dark:border-stone-600
+	       bg-white dark:bg-stone-900
+	       text-stone-500 dark:text-stone-400
+	       opacity-50 cursor-pointer
+	       transition duration-150
+	       hover:opacity-100 hover:border-stone-400 hover:text-stone-900
+	       dark:hover:border-stone-500 dark:hover:text-white
+	       focus-visible:opacity-100 focus-visible:border-stone-400
+	       focus-visible:text-stone-900 dark:focus-visible:text-white
+	       focus-visible:outline focus-visible:outline-2
+	       focus-visible:outline-offset-2 focus-visible:outline-sky-500
+	       dark:focus-visible:outline-sky-400
+	       disabled:cursor-wait
+	       motion-reduce:transition-none;
 }
 
 .copy-code-button[data-state="success"] {
-	@apply border-green-500 text-green-300;
+	@apply opacity-100 border-green-600 text-green-600
+	       dark:border-green-400 dark:text-green-400;
 }
 
 .copy-code-button[data-state="error"] {
-	@apply border-red-500 text-red-300;
+	@apply opacity-100 border-red-600 text-red-600
+	       dark:border-red-400 dark:text-red-400;
 }
 
 .copy-code-icon {
@@ -109,7 +144,8 @@ pre[class*="language-"] {
   	}
   }
 
-  &.info {
+  /* `note` is what GitHub style `> [!NOTE]` callouts produce. */
+  &.info, &.note {
     @apply border-blue-200 dark:border-blue-800;
 
     & .admonition-title::before {

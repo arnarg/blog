@@ -34,9 +34,7 @@ We're going to build a nixidy environment called `dev` containing one applicatio
 - **Basic familiarity** with Kubernetes Deployments, Services, and Namespaces
 - **Basic familiarity** with Argo CD `Application` resources
 
-/// admonition | info
-    type: info
-
+/// info
 nixidy implements the [Rendered Manifests Pattern](https://akuity.io/blog/the-rendered-manifests-pattern/) where your CI generates plain YAML, you review it in PRs, and Argo CD deploys it. If you've used Argo CD with raw YAML or Kustomize before, the deployment side is identical. The difference is entirely in *how the YAML is produced*.
 ///
 
@@ -53,7 +51,7 @@ git init
 
 Now create `flake.nix`, this is the entry point that wires nixidy into your Nix flake:
 
-```nix linenums="1"
+```nix title="flake.nix" linenums="1"
 {
   description = "My Kubernetes cluster managed with nixidy";
 
@@ -85,9 +83,7 @@ A couple things worth noting:
 - `nixidy.lib.mkEnvs` takes a set of named environments and returns Nix derivations that build YAML manifests. The key `dev` becomes the attribute you reference with `.#dev`.
 - Each environment takes a list of NixOS-style modules which are plain `.nix` files that set options. This is the same module system that powers NixOS, which means you get `imports`, `lib.mkDefault`, `lib.mkForce`, and all the composition primitives you'd expect.
 
-/// admonition | info
-    type: info
-    
+/// info
 If you've configured a NixOS system before, the shape is identical: a list of modules that set options, merged by the module system. The difference is that the options describe Kubernetes resources instead of system services.
 ///
 
@@ -101,7 +97,7 @@ mkdir -p env
 
 Write `env/dev.nix`. Make sure to replace the repository URL with your own (this is where nixidy will tell Argo CD to look for rendered manifests):
 
-```nix linenums="1"
+```nix title="env/dev.nix" linenums="1"
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
   nixidy.target.branch = "main";
@@ -142,9 +138,7 @@ Let me walk through what this declares:
 - **`resources.deployments.nginx`**: A typed Deployment. The `spec` attribute follows the [Kubernetes Deployment spec](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/deployment-v1/), but enforced at Nix evaluation time.
 - **`resources.services.nginx`**: A typed Service, same idea.
 
-/// admonition | Why not just write the YAML?
-    type: info
-
+/// info | Why not just write the YAML?
 Two reasons.
 
 1. Type errors become build errors. Set `replicas = "two"` in the module above and `nixidy build` fails immediately, not 15 minutes into a deployment rollout.
@@ -159,9 +153,7 @@ Run the build:
 nix run github:arnarg/nixidy/latest -- build .#dev
 ```
 
-/// admonition | info
-    type: info
-
+/// info
 The first run downloads nixidy and its dependencies into the Nix store. Subsequent runs are instant if nothing changed.
 ///
 
@@ -280,4 +272,4 @@ This runs `kubectl apply --prune` with the correct label selectors, so resources
 
 ## What's next
 
-We now have one application in one environment. Real clusters have a dozen applications across dev, staging, and production and I don't want to copy-paste the same Deployment into three files. In [Part 2](/posts/nixidy-part-2-multi-env-and-helm-charts/) we'll refactor the nginx application into a shared module, override `replicas` per environment with `lib.mkDefault` and `lib.mkForce`, and integrate a Helm chart without giving up type safety.
+We now have one application in one environment. Real clusters have a dozen applications across dev, staging, and production and I don't want to copy-paste the same Deployment into three files. In [Part 2](./nixidy-part-2-multi-env-and-helm-charts.md) we'll refactor the nginx application into a shared module, override `replicas` per environment with `lib.mkDefault` and `lib.mkForce`, and integrate a Helm chart without giving up type safety.

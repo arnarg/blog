@@ -28,7 +28,7 @@ We're going to build a single GitHub Actions workflow file that runs `nixidy bui
 
 ## Prerequisites
 
-- [Part 1](/posts/nixidy-part-1-introduction/), [2](/posts/nixidy-part-2-multi-env-and-helm-charts/), [3](/posts/nixidy-part-3-reusable-templates/), [4](/posts/nixidy-part-4-typed-resource-options/) and [5](/posts/nixidy-part-5-assertions-and-warnings/) complete
+- [Part 1](./nixidy-part-1-introduction.md), [2](./nixidy-part-2-multi-env-and-helm-charts.md), [3](./nixidy-part-3-reusable-templates.md), [4](./nixidy-part-4-typed-resource-options.md) and [5](./nixidy-part-5-assertions-and-warnings.md) complete
 - The same toolchain: **Nix** and **nixidy**
 
 ## The promotion workflow
@@ -37,7 +37,7 @@ The core idea: Nix files change on `main`, CI renders them to YAML, and the YAML
 
 Let's create `.github/workflows/promote-dev.yaml`:
 
-```yaml linenums="1"
+```yaml title=".github/workflows/promote-dev.yaml" linenums="1"
 name: Promote to dev
 
 on:
@@ -93,9 +93,7 @@ Let me walk through each step:
 - **`EndBug/add-and-commit`**: commits the manifests to `promote/env/dev` (an orphan branch, not `main`). The `--force` push keeps the branch clean, each promotion overwrites the previous one.
 - **`thomaseizinger/create-pull-request`**: opens a PR from `promote/env/dev` into `main`. The PR diff is exactly the rendered YAML changes. Reviewers see `Deployment-nginx.yaml` with `replicas: 3` changed to `replicas: 5`, not the Nix expression that produced it.
 
-/// admonition | warning
-    type: warning
-    
+/// warning
 The `arnarg/nixidy/actions/build` action requires flakes support even if the project doesn't use flakes, because the action internally uses `nix run` to invoke the nixidy CLI. That's why `extra-experimental-features = nix-command flakes` is necessary in the `install-nix-action` config.
 ///
 
@@ -137,9 +135,7 @@ nix run github:arnarg/nixidy/latest -- diff .#dev --path manifests/dev
 
 This builds `.#dev` and compares it against the YAML already committed in `manifests/dev/`. If the output is empty, nothing changed and the local Nix edits don't affect the rendered manifests. If it shows changes, those are the exact diffs that will appear in the promotion PR.
 
-/// admonition | tip
-    type: tip
-
+/// tip
 `nixidy diff` is particularly useful before a `nixidy switch`. Run the diff, review the changes, then switch.
 ///
 

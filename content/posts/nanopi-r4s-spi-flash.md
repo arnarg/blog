@@ -57,7 +57,8 @@ Look how low profile that is!
 
 When it comes to the actual schematic and PCB design, there's not much to it. Just the NOR flash chip itself, a decoupling capacitor and a dip switch for enabling write protection and hold functionality, along with some pull-up resistors. I have released the kicad project files and gerbers on [GitHub](https://github.com/arnarg/nanopi-r4s-spi-flash-board/).
 
-> Note that a previous revision included an i2c EEPROM for storing mac addresses for the different ethernet interfaces, but ended up just storing this in the U-Boot environment instead.
+> [!NOTE]
+> A previous revision included an i2c EEPROM for storing mac addresses for the different ethernet interfaces, but ended up just storing this in the U-Boot environment instead.
 
 ## Back to Tow-Boot
 
@@ -72,6 +73,7 @@ So the installation to the SPI flash involves:
 3. Burn the resulting `./result/spi.installer.img` to an SD card (`dd if=./result/spi.installer.img of=/dev/sdX bs=1M oflag=direct,sync status=progress`).
 4. Boot from the SD card while attached to the serial port header on the NanoPI R4S and there should be presented to you the option to erase and flash the SPI NOR flash.
 
+> [!TIP]
 > Alternatively you can download the pre-built `spi.installer.img` from the [GitHub release](https://github.com/arnarg/tow-boot-custom/releases/tag/2023.07-007) in my repository.
 
 ### Persistent MAC addresses

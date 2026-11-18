@@ -83,6 +83,7 @@ And that left me with this pinout:
 
 After having figured out this pinout I roughly verified the pinout of PCIe1 by bringing a picture of the F5-422 backplane into Kicad and routing the external traces to the vias that I can see and then attempt to route them on an internal layer, then assume I was incorrect in my pinout and attempt to route different combinations. My initial guess was the one that was easiest to route between the vias so I was fairly (-ish) confident in that I was correct.
 
+> [!NOTE]
 > You may also have noticed that some of the pins are marked `?`. Most of these pins were not connected on my backplane and/or I could not figure out where they were routed to as those were also mostly routed on internal layers.
 
 ### Power circuits
@@ -145,6 +146,7 @@ So you don't need to scroll up again here's a picture of the final version!
 
 ![Picture of the back of the new backplane PCB next to the original one.](/images/posts/f3-backplane/f3-comparison-back.jpg)
 
+> [!NOTE]
 > The soldering of the SATA connectors is kind of rough because I had forgotten to add thermal reliefs to the internal ground plane, making soldering very difficult. This has been fixed in the GitHub repository.
 
 hdparm test results for the NVMe SSD:

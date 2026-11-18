@@ -33,7 +33,8 @@ It's also cheap enough so that I wouldn't feel bad about bricking it in my attem
 
 There are images with LibreELEC and armbian out there on forums, but they require you to hold down a small button on the board to boot from the sd card and also runs the same kernel as the original Android OS, I believe. That simply won't do!
 
-> Warning! This post is a brain dump of rather technical information, if you just want some step by step skip to [recap](#recap)
+> [!WARNING]
+> This post is a brain dump of rather technical information, if you just want some step by step skip to [recap](#recap)
 
 ## U-Boot
 
@@ -76,6 +77,7 @@ make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- p281_defconfig
 make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu-
 ```
 
+> [!NOTE]
 > aarch64-linux-gnu is the name of the aarch64 toolchain in Arch Linux' repos, your distro might call it something else.
 
 ### Let's get back to that secure boot thing
@@ -140,7 +142,7 @@ Preparing an sd card is fairly straight forward:
 6. Burn the bootloader to the sd card (like talked about in previous section)
 7. Finally write the following in `/boot/extlinux/extlinux.conf`
 
-```
+```text title="/boot/extlinux/extlinux.conf"
 menu title ArchLinuxARM Boot Options.
 timeout 20
 
@@ -151,6 +153,7 @@ label ArchLinuxARM
         fdtdir /boot/dtbs/
 ```
 
+> [!NOTE]
 > The paths are relative to the first partition. So if you have a separate boot partition that is then mounted under `/boot` in the root, make sure it's the first partition and drop the `/boot` prefix from all the paths in `extlinux.conf`. This boot partition will also need to be added manually to fstab inside the rootfs, if you like kernel updates.
 
 After that fiasco is done you can pop that sd card into your board and watch as that glorious Arch Linux ARM boots. You can find more information such as default passwords and services in the Arch Linux ARM [docs][14].
@@ -197,6 +200,7 @@ If you don't care about the process it took me to get here and want step by step
 5. Get ArchLinuxARM-tx3-mini.img onto your sd card or scp it to your running TX3 Mini
 6. Burn the image onto the eMMC from the running sd card setup (`dd if=ArchLinuxARM-tx3-mini.img of=/dev/mmcblkX bs=1M`)
 
+> [!NOTE]
 > The generated image is 2GiB. After flashing it to the eMMC the partition needs to be enlarged manually. You can google that, I'm not your mom.
 
 ## Final words

@@ -28,7 +28,7 @@ We're going to add assertions on the `nginx` and `webapp` applications that enfo
 
 ## Prerequisites
 
-- [Part 1](/posts/nixidy-part-1-introduction/), [2](/posts/nixidy-part-2-multi-env-and-helm-charts/), [3](/posts/nixidy-part-3-reusable-templates/) and [4](/posts/nixidy-part-4-typed-resource-options/) complete
+- [Part 1](./nixidy-part-1-introduction.md), [2](./nixidy-part-2-multi-env-and-helm-charts.md), [3](./nixidy-part-3-reusable-templates.md) and [4](./nixidy-part-4-typed-resource-options.md) complete
 - The same toolchain: **Nix** and **nixidy**
 
 ## Per-application assertions
@@ -37,7 +37,7 @@ An assertion is a boolean condition and a message. If the condition evaluates to
 
 Let's open `modules/nginx.nix` and add an assertion that rejects zero replica counts:
 
-```nix linenums="1"
+```nix title="modules/nginx.nix" linenums="1"
 { lib, config, ... }:
 {
   applications.nginx = {
@@ -83,7 +83,7 @@ A couple things to notice:
 
 Let's test it. Temporarily set `replicas = 0` in `env/dev.nix`:
 
-```nix
+```nix title="env/dev.nix"
 applications.nginx.resources.deployments.nginx.spec.replicas = 0;
 ```
 
@@ -102,9 +102,7 @@ error: failed assertions:
 
 The `assertion(nginx)` prefix tells us which application's assertion block failed. Revert the change and rebuild and the build succeeds again.
 
-/// admonition | info
-    type: info
-    
+/// info
 Assertions are evaluated during *every* `nixidy build`, `nixidy switch`, and `nixidy apply`. They don't just guard CI, they guard the local workflow too. If I add an assertion that production deployments must have resource limits, `nixidy build .#prod` will fail on my laptop before I ever commit. That's the point: the invariant is enforced by the build system, not by review discipline.
 ///
 
@@ -114,7 +112,7 @@ The `config` argument is global, it contains *all* applications, not just the on
 
 A common pattern is a shared module that all environments import, containing global invariants. Let's create `modules/assertions.nix`:
 
-```nix linenums="1"
+```nix title="modules/assertions.nix" linenums="1"
 { lib, config, ... }:
 {
   nixidy.assertions = [
@@ -131,9 +129,7 @@ A common pattern is a shared module that all environments import, containing glo
 
 This is a global assertion, defined under `nixidy.assertions` instead of under a specific application. It iterates over every application in the environment and checks that `syncPolicy.autoSync.enable` is `true`. If any application doesn't have it set, the build fails.
 
-/// admonition | Per-application vs. global assertions
-    type: tip
-
+/// tip | Per-application vs. global assertions
 Per-application assertions (`applications.<name>.assertions`) are scoped, they check invariants about a single application and the error message includes the application name. Use them for rules like "must have at least one Deployment" or "replicas must be positive."
 
 Global assertions (`nixidy.assertions`) check invariants that span the entire environment. Use them for rules like "all applications must have auto-sync" or "every namespace used by an application must exist." The error message is prefixed with `global` instead of an application name.
@@ -184,9 +180,7 @@ nixidy.warnings = [
 ];
 ```
 
-/// admonition | tip
-    type: tip
-
+/// tip
 An unconditional warning is shorthand for `{ when = true; message = "..."; }`. nixidy expands it internally. Use the shorthand for migration notices and persistent reminders, and the conditional form for checks that should only fire in specific configurations.
 ///
 
@@ -194,7 +188,7 @@ An unconditional warning is shorthand for `{ when = true; message = "..."; }`. n
 
 The real power of assertions is encoding organizational policy as build-time checks. Let's create `modules/production-hardening.nix`:
 
-```nix linenums="1"
+```nix title="modules/production-hardening.nix" linenums="1"
 { lib, config, ... }:
 {
   nixidy.assertions = [
@@ -226,7 +220,7 @@ This walks every application, every Deployment, and every container and asserts 
 
 I'll import it only in `env/prod.nix` since dev and staging don't need this gate:
 
-```nix linenums="1"
+```nix title="env/prod.nix" linenums="1"
 { lib, ... }:
 {
   imports = [ ../modules/production-hardening.nix ];
@@ -243,4 +237,4 @@ Build `.#dev` and it succeeds without the hardening check. Build `.#prod` and if
 
 ## What's next
 
-Assertions close the last gap between "the types are correct" and "the configuration is correct." But the rendered manifests still need to reach the Git repository and the cluster. [Part 6](/posts/nixidy-part-6-ci-workflow/) covers CI integration: the `arnarg/nixidy/actions/build` and `arnarg/nixidy/actions/switch` GitHub Actions, the promotion workflow from Nix changes to reviewed YAML diffs, and the `nixidy diff` command for comparing environments before promotion.
+Assertions close the last gap between "the types are correct" and "the configuration is correct." But the rendered manifests still need to reach the Git repository and the cluster. [Part 6](./nixidy-part-6-ci-workflow.md) covers CI integration: the `arnarg/nixidy/actions/build` and `arnarg/nixidy/actions/switch` GitHub Actions, the promotion workflow from Nix changes to reviewed YAML diffs, and the `nixidy diff` command for comparing environments before promotion.

@@ -69,7 +69,12 @@ for (const block of document.querySelectorAll("article div.highlight")) {
     }
   });
 
-  // Keep the button outside <pre> so horizontal code scrolling does not move it.
-  block.prepend(button);
-  block.append(status);
+  // Wrap <pre> in a container holding the button, which keeps the button
+  // below a code block title and in place when the code scrolls
+  // horizontally. <pre> stays the last child, keeping its spacing.
+  const pre = code.closest("pre");
+  const container = document.createElement("div");
+  container.className = "copy-code-container";
+  pre.before(container);
+  container.append(button, status, pre);
 }

@@ -14,7 +14,7 @@ ai:
   model: GLM-5.1
 ---
 
-In [the previous part](/posts/nixidy-part-1-introduction/) we created a single nixidy application. The nginx `Deployment` in `dev.nix` is 20 lines. When I add `staging.nix` and `prod.nix` I'll have three copies of those 20 lines, and they'll be identical except for `replicas` and maybe an annotation or two. Change the container port in one, forget it in another, and I've got a silent divergence that no CI check will catch.
+In [the previous part](./nixidy-part-1-introduction.md) we created a single nixidy application. The nginx `Deployment` in `dev.nix` is 20 lines. When I add `staging.nix` and `prod.nix` I'll have three copies of those 20 lines, and they'll be identical except for `replicas` and maybe an annotation or two. Change the container port in one, forget it in another, and I've got a silent divergence that no CI check will catch.
 
 The NixOS module system solves this the same way it solves duplicate NixOS host configs: shared base modules, `imports`, and priority primitives that let me express "same app, different scale" in two lines instead of a full file copy. This part covers that composition, then adds a Helm chart to the mix (because most real clusters run at least one piece of software that only ships as a Helm chart).
 
@@ -28,14 +28,14 @@ We're going to build a project with a shared `modules/nginx.nix` imported by `en
 
 ## Prerequisites
 
-- [Part 1](/posts/nixidy-part-1-introduction/) complete: you have a working nixidy project with `env/dev.nix`
+- [Part 1](./nixidy-part-1-introduction.md) complete: you have a working nixidy project with `env/dev.nix`
 - The same toolchain: **Nix** and **nixidy**
 
 ## Refactor the nginx application into a shared module
 
 The nginx definition currently lives inline in `env/dev.nix`. Let's pull it out into its own module so every environment can import it. Create `modules/nginx.nix`:
 
-```nix linenums="1"
+```nix title="modules/nginx.nix" linenums="1"
 { lib, ... }:
 {
   applications.nginx = {
@@ -64,17 +64,15 @@ The nginx definition currently lives inline in `env/dev.nix`. Let's pull it out 
 }
 ```
 
-One change from [Part 1](/posts/nixidy-part-1-introduction/): `replicas = 2` became `replicas = lib.mkDefault 2`. This sets the default priority, so any module that imports this one can override it with a plain assignment or with `lib.mkForce`.
+One change from [Part 1](./nixidy-part-1-introduction.md): `replicas = 2` became `replicas = lib.mkDefault 2`. This sets the default priority, so any module that imports this one can override it with a plain assignment or with `lib.mkForce`.
 
-/// admonition | tip
-    type: tip
-
+/// tip
 The NixOS module system has three priority tiers you'll use constantly: `lib.mkDefault` (`1000`, which is easily overridden), a plain value (`100`, which is the normal priority), and `lib.mkForce` (`50`, which wins against everything). Two modules setting the same option at the same priority is an error and the system forces you to be explicit about which one wins.
 ///
 
 Now I need to update `flake.nix` to pull in the shared module via `mkEnvs`'s `modules` list:
 
-```nix linenums="1"
+```nix title="flake.nix" linenums="1"
 {
   description = "My Kubernetes cluster managed with nixidy";
 
@@ -106,7 +104,7 @@ The `modules` list at the top level of `mkEnvs` is a shared import and every env
 
 Then I can rewrite `env/dev.nix` (no import needed, since `flake.nix` already handles it):
 
-```nix
+```nix title="env/dev.nix"
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
   nixidy.target.branch = "main";
@@ -121,13 +119,13 @@ nix run github:arnarg/nixidy/latest -- build .#dev
 tree result
 ```
 
-The output is identical to [Part 1](/posts/nixidy-part-1-introduction/) (four files, same content). The module system merged the shared definition with the (empty) dev-specific overrides and produced the same result.
+The output is identical to [Part 1](./nixidy-part-1-introduction.md) (four files, same content). The module system merged the shared definition with the (empty) dev-specific overrides and produced the same result.
 
 ## A staging environment with a different replica count
 
 Now let's add a second environment. The shared modules list in `flake.nix` already covers nginx, so `env/staging.nix` only needs environment-specific config:
 
-```nix
+```nix title="flake.nix"
 nixidyEnvs = nixidy.lib.mkEnvs {
   inherit pkgs;
   modules = [ ./modules/nginx.nix ];
@@ -140,7 +138,7 @@ nixidyEnvs = nixidy.lib.mkEnvs {
 
 Let's create `env/staging.nix`:
 
-```nix
+```nix title="env/staging.nix"
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
   nixidy.target.branch = "main";
@@ -165,7 +163,7 @@ You should see `replicas: 3`.
 
 Now let's create `env/prod.nix`:
 
-```nix linenums="1"
+```nix title="env/prod.nix" linenums="1"
 { lib, ... }:
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
@@ -195,15 +193,13 @@ There are two things happening here:
 - `lib.mkForce 10` sets replicas at priority `50`. This wins against any accidental override from another imported module. In production, that guarantee matters as a stray `mkDefault` from a shared module won't silently scale you down.
 - `syncPolicy.autoSync` configures the generated Argo CD `Application` to automatically sync changes, prune deleted resources, and self-heal when the cluster drifts from the desired state. This is an Argo CD feature nixidy exposes as a typed option. You set it in Nix, not in the Argo CD UI.
 
-/// admonition | `lib.mkForce` as a safety rail
-    type: tip
-
+/// tip | `lib.mkForce` as a safety rail
 In a large project with many shared modules, it's easy for two modules to set the same option at the same priority. The module system catches this at build time and two plain values for `replicas` is a conflict error, not a silent override. `mkForce` enforces the value. Use it sparingly (production replicas, resource limits, security contexts). Overusing it defeats the composition model because every `mkForce` is a value that can't be overridden elsewhere.
 ///
 
 Let's update `flake.nix` once more to include all three environments. I'll add the Traefik module to the shared list at the same time:
 
-```nix linenums="1"
+```nix title="flake.nix" linenums="1"
 nixidyEnvs = nixidy.lib.mkEnvs {
   inherit pkgs;
   modules = [
@@ -224,7 +220,7 @@ Most Kubernetes software ships as Helm charts and refusing to use them means mai
 
 Let's add Traefik as a second application. Create `modules/traefik.nix`:
 
-```nix linenums="1"
+```nix title="modules/traefik.nix" linenums="1"
 { lib, ... }:
 {
   applications.traefik = {
@@ -257,15 +253,13 @@ Let me walk through the new pieces:
 - **`values`**: Standard Helm values, but expressed as a Nix attribute set.
 - **`resources.deployments.traefik...`**: Patches a field *after* Helm rendering. The Helm chart produces the Traefik Deployment, nixidy parses it into typed resources, and you override the container image with `lib.mkForce`.
 
-/// admonition | warning
-    type: warning
-    
+/// warning
 The `chartHash` is critical. It's the SHA-256 of the `.tgz` archive. If you change `version` to `"25.0.1"` without updating the hash, the build fails with a hash mismatch. To get the correct hash, set it to `lib.fakeHash` or an empty string (`"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="`), run the build, and copy the *expected* hash from the error message. This is the poor man's Nix workflow for pinned fetches.
 ///
 
 The shared `modules` list in `flake.nix` already covers nginx and Traefik, so `env/dev.nix` stays minimal:
 
-```nix
+```nix title="env/dev.nix"
 {
   nixidy.target.repository = "https://github.com/YOUR_USERNAME/my-cluster.git";
   nixidy.target.branch = "main";
@@ -300,4 +294,4 @@ Each environment file contains only target configuration and environment-specifi
 
 ## What's next
 
-Now we have three environments with a nixidy defined application and a Helm chart. But the nginx application is still defined from scratch while real clusters have recurring patterns: a web app that always gets a Deployment, a Service, and an Ingress with the same shape. [Part 3](/posts/nixidy-part-3-reusable-templates/) covers nixidy's template system, which lets us define that pattern once with typed options and instantiate it across applications with different images, ports, and replica counts.
+Now we have three environments with a nixidy defined application and a Helm chart. But the nginx application is still defined from scratch while real clusters have recurring patterns: a web app that always gets a Deployment, a Service, and an Ingress with the same shape. [Part 3](./nixidy-part-3-reusable-templates.md) covers nixidy's template system, which lets us define that pattern once with typed options and instantiate it across applications with different images, ports, and replica counts.

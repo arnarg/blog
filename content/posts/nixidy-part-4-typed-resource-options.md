@@ -28,7 +28,7 @@ We're going to add a Cilium `CiliumNetworkPolicy` resource with full type safety
 
 ## Prerequisites
 
-- [Part 1](/posts/nixidy-part-1-introduction/), [2](/posts/nixidy-part-2-multi-env-and-helm-charts/) and [3](/posts/nixidy-part-3-reusable-templates/) complete
+- [Part 1](./nixidy-part-1-introduction.md), [2](./nixidy-part-2-multi-env-and-helm-charts.md) and [3](./nixidy-part-3-reusable-templates.md) complete
 - The same toolchain: **Nix** and **nixidy**
 
 ## How typed resources work
@@ -51,11 +51,9 @@ Typing those paths every time is verbose. nixidy provides aliases, which are the
 | `resources.core.v1.ConfigMap` | `resources.configMaps` |
 | `resources.batch.v1.CronJob` | `resources.cronJobs` |
 
-We've been using these aliases throughout [Part 1](/posts/nixidy-part-1-introduction/), [2](/posts/nixidy-part-2-multi-env-and-helm-charts/) and [3](/posts/nixidy-part-3-reusable-templates/). The aliases resolve to the same typed options, so `resources.services.nginx` and `resources.core.v1.Service.nginx` produce identical output.
+We've been using these aliases throughout [Part 1](./nixidy-part-1-introduction.md), [2](./nixidy-part-2-multi-env-and-helm-charts.md) and [3](./nixidy-part-3-reusable-templates.md). The aliases resolve to the same typed options, so `resources.services.nginx` and `resources.core.v1.Service.nginx` produce identical output.
 
-/// admonition | info
-    type: info
-    
+/// info
 The alias is the plural camelCase of the `kind` field, not the `resources` field from the Kubernetes API. `CronJob` becomes `cronJobs`, `NetworkPolicy` becomes `networkPolicies`, `ClusterRole` becomes `clusterRoles`. When in doubt, check the [nixidy options search](https://nixidy.dev/options/search).
 ///
 
@@ -77,7 +75,7 @@ nixidy ships a generator called [`fromCRD`](https://nixidy.dev/user_guide/typed_
 
 Let's generate types for Cilium's `CiliumNetworkPolicy`. Let's add the generator to `flake.nix`:
 
-```nix linenums="1"
+```nix title="flake.nix" linenums="1"
 {
   description = "My Kubernetes cluster managed with nixidy";
 
@@ -144,21 +142,19 @@ cp result generated/cilium.nix
 
 Then register it via `nixidy.applicationImports` in one of the shared modules. For example, add to `modules/nginx.nix` or create a dedicated `modules/crd-imports.nix`:
 
-```nix
+```nix title="modules/crd-imports.nix"
 {
   nixidy.applicationImports = [ ../generated/cilium.nix ];
 }
 ```
 
-/// admonition | warning
-    type: warning
-    
+/// warning
 `nixidy.applicationImports` is different from the shared `modules` list in `flake.nix`. The shared `modules` list feeds into the environment-level module system. `nixidy.applicationImports` feeds into the *per-application* module system, meaning it makes the generated resource types available inside `applications.<name>.resources.*`. If you put the import in the wrong place, the types won't be visible and you'll get "attribute missing" errors.
 ///
 
 Now the Cilium network policy resource is available with full type safety. Let's create `modules/cilium-policies.nix`:
 
-```nix linenums="1"
+```nix title="modules/cilium-policies.nix" linenums="1"
 { lib, ... }:
 {
   applications.network-policies = {
@@ -209,9 +205,7 @@ spec:
   endpointSelector: {}
 ```
 
-/// admonition | **Available in v0.20.0**
-    type: tip
-
+/// tip | **Available in v0.20.0**
 `fromCRD` generates a file you build, copy, and import. The module accessor `fromCRDModule` returns the resource options as a module value directly, skipping that round-trip. It's also accessible through the `generators` argument in nixidy modules:
 
 ```nix linenums="1"
@@ -257,15 +251,11 @@ packages.generators.cert-manager =
 
 The workflow is the same: `nix build .#generators.cert-manager`, copy the output into `generated/`, and register via `nixidy.applicationImports`. The `crds` list is optional, leave it empty to generate types for all CRDs the chart produces.
 
-/// admonition | info
-    type: info
-    
+/// info
 `fromChartCRD` also handles CRDs that contain Helm templating within their definitions, something `fromCRD` can't process because it reads raw YAML from the source tree rather than rendering a chart.
 ///
 
-/// admonition | **Available in v0.20.0**
-    type: tip
-
+/// tip | **Available in v0.20.0**
 Like `fromCRD` has `fromCRDModule`, `fromChartCRD` has `fromChartCRDModule` which also returns a module value instead of a generated file:
 
 ```nix linenums="1"
@@ -334,9 +324,7 @@ generators.keycloak = nixidy.packages.${system}.generators.fromCRD {
 
 The right-hand side (`"keycloakUserGroups"`) is the attribute name to use: `resources.keycloakUserGroups.my-instance`. It takes precedence over both `namePrefix` and the auto-generated plural alias. `attrNameOverrides` can be used without `namePrefix` if only specific CRDs need renaming, or combined when a prefix is wanted as a default with targeted overrides.
 
-/// admonition | warning
-    type: warning
-
+/// warning
 The left-hand key format is `<plural>.<group>`. It's easy to get wrong. If the override doesn't take effect, check the CRD YAML's `spec.names.plural` and `spec.group` fields and concatenate them with a dot. A mismatch (wrong plural, wrong group, missing sub-group) silently falls back to the auto-generated name.
 ///
 
@@ -355,9 +343,7 @@ applications.my-app = {
 
 The file is copied verbatim into the application's output directory. nixidy never parses it, never strips fields, never type-checks it. The trade-off is that it can't be patched through `resources.*`, and `nixidy apply` (the direct `kubectl` path) skips it. Only Argo CD with a SOPS plugin will apply it.
 
-/// admonition | warning
-    type: warning
-    
+/// warning
 Basenames in `extraRawYamls` must be unique within an application and must not collide with typed-resource output filenames (e.g., `Secret-myapp.yaml`). Both cases produce build-time assertion failures, nixidy catches the conflict before it reaches the cluster.
 ///
 
@@ -378,4 +364,4 @@ The rule of thumb: if a resource has typed options (built-in or generated), defi
 
 ## What's next
 
-Typed resources give me confidence that what I write is what Kubernetes expects in terms of the type of data for each field of a manifest. What it can't ensure is broader requirements such as minimum replicas for some or all deployments or when application A is deployed then application B *must* also be deployed. In [part 5](/posts/nixidy-part-5-assertions-and-warnings/) we will cover build-time assertions and warnings which can be used to define such requirements.
+Typed resources give me confidence that what I write is what Kubernetes expects in terms of the type of data for each field of a manifest. What it can't ensure is broader requirements such as minimum replicas for some or all deployments or when application A is deployed then application B *must* also be deployed. In [part 5](./nixidy-part-5-assertions-and-warnings.md) we will cover build-time assertions and warnings which can be used to define such requirements.

@@ -57,6 +57,7 @@ services.openssh.permitRootLogin = "yes";
 
 When opening the case and unplugging the fan you may notice that the fan is connected to a header marked on the PCB as `SYS_FAN2`. Well, a fan connected to this header does not spin up when the CPU heats up. It's only a 10W CPU but it can get quite hot if under load for a while uncooled. Naturally I turned to `lm_sensors`.
 
+> [!NOTE]
 > `nix-shell -p lm_sensors` will give you a new shell where lm_sensors is installed and its executables in path. When you exit this shell none of lm_sensors' executables are in path and it will be removed completely from the system next time `nix-collect-garbage` is run.
 
 Running `sensors-detect` revealed that the Super I/O chip on the system is `IT8613E` which the module [it87][5] thankfully does support. Modules `coretemp` and `it87` should be loaded and in NixOS that should be done by including the following in `/etc/nixos/configuration.nix` and running `nixos-rebuild switch`.
@@ -180,7 +181,7 @@ in {
 
 To install Plex Media Server you must include the following in your `/etc/nixos/configuration.nix`.
 
-```nix linenums="1"
+```nix title="/etc/nixos/configuration.nix" linenums="1"
 # Plex has an unfree license
 nixpkgs.config.allowUnfree = true;
 

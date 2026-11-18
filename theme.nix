@@ -611,13 +611,22 @@ in
   };
 
   website.content.processors.md = {
+    # Shorthand admonition blocks, e.g. `/// tip` or `/// warning | Title`.
+    settings.admonition.types = [
+      "info"
+      "note"
+      "tip"
+      "warning"
+    ];
+    # Resolve links against the markdown file, e.g. `./other-post.md`.
+    settings.relativeLinks.enable = true;
     settings.highlight = {
       # Light scheme by default, dark scheme when the user prefers dark mode,
       # matching Tailwind's media based dark: variant.
       style = [
-        { name = "gruvbox-light-medium"; }
+        { name = "catppuccin-latte"; }
         {
-          name = "gruvbox-dark-medium";
+          name = "catppuccin-mocha";
           media = "prefers-color-scheme: dark";
         }
       ];

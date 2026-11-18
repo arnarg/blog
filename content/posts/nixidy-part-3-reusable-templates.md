@@ -28,7 +28,7 @@ We're going to build a `webApp` template defined in `modules/templates.nix`, imp
 
 ## Prerequisites
 
-- [Parts 1](/posts/nixidy-part-1-introduction/) and [2](/posts/nixidy-part-2-multi-env-and-helm-charts/) complete: you have a multi-environment project with shared modules
+- [Parts 1](./nixidy-part-1-introduction.md) and [2](./nixidy-part-2-multi-env-and-helm-charts.md) complete: you have a multi-environment project with shared modules
 - The same toolchain: **Nix** and **nixidy**
 
 ## A template with typed options
@@ -37,7 +37,7 @@ A template has two parts: `options` and `output`. The `options` block declares w
 
 Let's create `modules/templates.nix`:
 
-```nix linenums="1"
+```nix title="modules/templates.nix" linenums="1"
 { lib, ... }:
 {
   templates.webApp = {
@@ -117,17 +117,15 @@ Let me walk through the structure:
 - **`output`**: A function receiving `{ name, config, ... }`. `name` is the instance identifier (you'll see how that works in a moment). `config` holds the resolved option values for this specific instance. The function returns an attribute set of resources in the same shape as `applications.<name>.resources`, but relative to the application that uses the template.
 - **`lib.mkIf`**: Conditionally includes the `ingresses` block only when `ingressHost` is not null. This is the standard NixOS module system conditional and the ingress simply doesn't exist when the host is null.
 
-/// admonition | Templates vs. shared modules
-    type: tip
-    
-A shared module (like `modules/nginx.nix` from [Part 2](/posts/nixidy-part-2-multi-env-and-helm-charts/)) defines *one* application's resources and lets environments override specific fields. A template defines a *pattern* (Deployment + Service + Ingress) and lets you instantiate it N times with different parameters. If you have one nginx, use a shared module. If you have five web applications that all follow the same Deployment-Service-Ingress shape, use a template.
+/// tip | Templates vs. shared modules
+A shared module (like `modules/nginx.nix` from [Part 2](./nixidy-part-2-multi-env-and-helm-charts.md)) defines *one* application's resources and lets environments override specific fields. A template defines a *pattern* (Deployment + Service + Ingress) and lets you instantiate it N times with different parameters. If you have one nginx, use a shared module. If you have five web applications that all follow the same Deployment-Service-Ingress shape, use a template.
 ///
 
 ## Using the template in an application
 
 Now let's add `modules/templates.nix` to the shared `modules` list in `flake.nix`:
 
-```nix linenums="1"
+```nix title="flake.nix" linenums="1"
       nixidyEnvs = nixidy.lib.mkEnvs {
         inherit pkgs;
         modules = [
@@ -145,7 +143,7 @@ Now let's add `modules/templates.nix` to the shared `modules` list in `flake.nix
 
 Now let's create a new application module that uses the template. Create `modules/webapps.nix`:
 
-```nix linenums="1"
+```nix title="modules/webapps.nix" linenums="1"
 { lib, ... }:
 {
   applications.frontend = {
@@ -178,11 +176,11 @@ The template instantiation syntax is `templates.<templateName>.<instanceName>`. 
 - `templates.webApp.frontend`: Use the `webApp` template, create an instance called `frontend`. The `name` argument in the `output` function receives `"frontend"`.
 - `{ image = "frontend:v1.2.3"; replicas = 3; port = 3000; ingressHost = "app.example.com"; }`: Set the options. `image` is required (no default), so omitting it would be a build error. `port` overrides the default of `8080` to `3000`. `ingressHost` triggers the `lib.mkIf` and generates an Ingress resource.
 
-For the `api` instance, `ingressHost` is left at its default (`null`), so no Ingress is generated and the API is cluster-internal. `replicas = lib.mkDefault 2` means environments can override it with a plain assignment (priority `100` beats the default `1000`), same composition mechanism from [Part 2](/posts/nixidy-part-2-multi-env-and-helm-charts/).
+For the `api` instance, `ingressHost` is left at its default (`null`), so no Ingress is generated and the API is cluster-internal. `replicas = lib.mkDefault 2` means environments can override it with a plain assignment (priority `100` beats the default `1000`), same composition mechanism from [Part 2](./nixidy-part-2-multi-env-and-helm-charts.md).
 
 Let's add `modules/webapps.nix` to the shared modules in `flake.nix`:
 
-```nix
+```nix title="flake.nix"
 modules = [
   ./modules/templates.nix
   ./modules/webapps.nix
@@ -280,4 +278,4 @@ spec:
 
 ## What's next
 
-Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In [part 4](/posts/nixidy-part-4-typed-resource-options/) I'll cover how to generate typed resource options from CRDs (both plain YAML files and a Helm chart), so that we can define and override `CiliumNetworkPolicies`, cert-manager's `Certificates` or prometheus `ServiceMonitors` in `applications.<name>.resources`.
+Templates close the last duplication gap for resource definitions. However I can still only define and override core Kubernetes resources (such as Deployments, Services and Ingresses). In [part 4](./nixidy-part-4-typed-resource-options.md) I'll cover how to generate typed resource options from CRDs (both plain YAML files and a Helm chart), so that we can define and override `CiliumNetworkPolicies`, cert-manager's `Certificates` or prometheus `ServiceMonitors` in `applications.<name>.resources`.
