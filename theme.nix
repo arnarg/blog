@@ -330,11 +330,23 @@ in
             (attrs.classes [
               "pt-8"
               "pb-12"
+              # Tighter on small screens, where the header is a single row.
+              "max-sm:pt-6"
+              "max-sm:pb-4"
             ])
           ]
           [
             (div
-              [ (attrs.classes [ "relative" ]) ]
+              [
+                (attrs.classes [
+                  "relative"
+                  # On small screens the title is left aligned with the
+                  # switcher inline on the right.
+                  "max-sm:flex"
+                  "max-sm:items-center"
+                  "max-sm:justify-between"
+                ])
+              ]
               [
                 (h1
                   [
@@ -342,7 +354,9 @@ in
                       "text-stone-700"
                       "dark:text-stone-300"
                       "text-center"
+                      "max-sm:text-left"
                       "text-5xl"
+                      "max-sm:text-4xl"
                       "font-extralight"
                     ])
                   ]
@@ -367,8 +381,7 @@ in
               "right-0"
               "top-1/2"
               "-translate-y-1/2"
-              # Above the title on small screens, where it fills the width.
-              "max-sm:-top-7"
+              "max-sm:static"
               "max-sm:translate-y-0"
             ])
             (lib.mkAttr "hidden" "")
