@@ -256,3 +256,17 @@ pre[class*="language-"] {
   clip-path: polygon(100% 50%, 0% 0%, 0% 100%);
 }
 
+
+/* Native UI such as scrollbars follows the color scheme picked with the
+   switcher, or the system's when there is none. */
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}

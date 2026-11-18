@@ -29,6 +29,8 @@ let
     strong
     span
     ;
+
+  colorSchemeStorageKey = "${config.website.name}-color-scheme";
 in
 {
   website.layouts = {
@@ -205,14 +207,42 @@ in
           ...
         }@context:
         [
+          # Apply the color scheme picked with the switcher before the page
+          # is rendered, avoiding a flash of the system color scheme.
+          (script
+            [ ]
+            [
+              ''
+                (function () {
+                  try {
+                    var scheme = window.localStorage.getItem(${builtins.toJSON colorSchemeStorageKey});
+                    if (scheme === "light" || scheme === "dark") {
+                      document.documentElement.setAttribute("data-theme", scheme);
+                    }
+                  } catch (error) {}
+                })();
+              ''
+            ]
+          )
           (link [
             (attrs.rel "stylesheet")
             (attrs.href "/css/main.css")
           ])
-          (script [
-            (attrs.src "/js/copy-code.js")
-            (lib.mkAttr "defer" "")
-          ] [ ])
+          (script
+            [
+              (attrs.src "/js/copy-code.js")
+              (lib.mkAttr "defer" "")
+            ]
+            [ ]
+          )
+          (script
+            [
+              (attrs.src "/js/color-scheme.js")
+              (attrs.data "storage-key" colorSchemeStorageKey)
+              (lib.mkAttr "defer" "")
+            ]
+            [ ]
+          )
           (meta [
             (attrs.httpEquiv "content-type")
             (attrs.content "text/html")
@@ -303,18 +333,91 @@ in
             ])
           ]
           [
-            (h1
+            (div
+              [ (attrs.classes [ "relative" ]) ]
               [
+                (h1
+                  [
+                    (attrs.classes [
+                      "text-stone-700"
+                      "dark:text-stone-300"
+                      "text-center"
+                      "text-5xl"
+                      "font-extralight"
+                    ])
+                  ]
+                  [
+                    (a [ (attrs.href "/") ] [ metadata.title ])
+                  ]
+                )
+                (partials.colorSchemeSwitcher { })
+              ]
+            )
+          ];
+
+      # Switches between light and dark mode, showing the icon of the mode it
+      # switches to. Hidden until color-scheme.js sets it up, so it's never a
+      # dead button without JavaScript.
+      colorSchemeSwitcher =
+        _:
+        div
+          [
+            (attrs.classes [
+              "absolute"
+              "right-0"
+              "top-1/2"
+              "-translate-y-1/2"
+              # Above the title on small screens, where it fills the width.
+              "max-sm:-top-7"
+              "max-sm:translate-y-0"
+            ])
+            (lib.mkAttr "hidden" "")
+            (attrs.data "color-scheme-switcher" "")
+          ]
+          [
+            (lib.tags.button
+              [
+                (attrs.type "button")
                 (attrs.classes [
-                  "text-stone-700"
-                  "dark:text-stone-300"
-                  "text-center"
-                  "text-5xl"
-                  "font-extralight"
+                  "tooltip"
+                  "tooltip-left"
+                  "flex"
+                  "p-1"
+                  "rounded"
+                  "text-stone-400"
+                  "hover:text-stone-700"
+                  "dark:text-stone-500"
+                  "dark:hover:text-stone-200"
+                  "transition-colors"
+                  "duration-200"
+                  "focus:outline-none"
+                  "focus-visible:ring-2"
+                  "focus-visible:ring-sky-500"
+                  "dark:focus-visible:ring-sky-400"
                 ])
+                (attrs.data "label-light" "Switch to light mode")
+                (attrs.data "label-dark" "Switch to dark mode")
+                (attrs.aria "label" "Switch to dark mode")
               ]
               [
-                (a [ (attrs.href "/") ] [ metadata.title ])
+                (span
+                  [
+                    (attrs.classes [
+                      "block"
+                      "dark:hidden"
+                    ])
+                  ]
+                  [ (builtins.readFile ./icons/moon.svg) ]
+                )
+                (span
+                  [
+                    (attrs.classes [
+                      "hidden"
+                      "dark:block"
+                    ])
+                  ]
+                  [ (builtins.readFile ./icons/sun.svg) ]
+                )
               ]
             )
           ];
@@ -621,15 +724,39 @@ in
     # Resolve links against the markdown file, e.g. `./other-post.md`.
     settings.relativeLinks.enable = true;
     settings.highlight = {
-      # Light scheme by default, dark scheme when the user prefers dark mode,
-      # matching Tailwind's media based dark: variant.
-      style = [
-        { name = "catppuccin-latte"; }
-        {
-          name = "gruvbox-dark-medium";
-          media = "prefers-color-scheme: dark";
-        }
-      ];
+      # Follow the system color scheme unless the reader picked one with the
+      # switcher, matching Tailwind's dark: variant. Same as nixtml's docs theme.
+      style =
+        let
+          light = "catppuccin-latte";
+          dark = "gruvbox-dark-medium";
+          systemSelector = ":where(:root:not([data-theme])) .highlight";
+        in
+        [
+          {
+            name = light;
+            media = "prefers-color-scheme: no-preference";
+            selector = systemSelector;
+          }
+          {
+            name = light;
+            media = "prefers-color-scheme: light";
+            selector = systemSelector;
+          }
+          {
+            name = dark;
+            media = "prefers-color-scheme: dark";
+            selector = systemSelector;
+          }
+          {
+            name = light;
+            selector = ":where([data-theme=light]) .highlight";
+          }
+          {
+            name = dark;
+            selector = ":where([data-theme=dark]) .highlight";
+          }
+        ];
       noclasses = false;
       linenumsStyle = "pymdownx-inline";
     };
