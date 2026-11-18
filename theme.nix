@@ -169,7 +169,9 @@ in
         [ ]
         [
           (section [ ] (
-            (map (post: config.website.layouts.partials.post post) items)
+            (map (
+              item: if item.isGroup or false then partials.series item else partials.post item
+            ) items)
             ++ [ (config.website.layouts.partials.pagination context) ]
           ))
         ];
@@ -623,6 +625,144 @@ in
                     (attrs.href url)
                   ]
                   [ (lib.escapeHTML "Read more >") ]
+                )
+              ]
+            )
+          ];
+
+      # Listing entry for a group of posts in the same series, rendered like
+      # a post entry with a table of contents of its parts.
+      series =
+        {
+          term,
+          url,
+          date,
+          items,
+          ...
+        }:
+        let
+          first = lib.head items;
+          latest = lib.last items;
+          count = lib.length items;
+          previous = lib.elemAt items (count - 2);
+
+          # A part published more than a day after the one before it was
+          # added to an existing series, rather than released along with it.
+          addedLater = latest.dateEpoch - previous.dateEpoch > 86400;
+
+          # "nixidy part 2: Multi-environments" -> "Multi-environments"
+          partTitle =
+            title:
+            let
+              m = builtins.match ".*[Pp]art [0-9]+: (.*)" title;
+            in
+            if m == null then title else lib.head m;
+        in
+        article
+          [
+            (attrs.classes [
+              "text-stone-700"
+              "dark:text-stone-400"
+              "max-w-3xl"
+              "mb-12"
+            ])
+          ]
+          [
+            (header
+              [ ]
+              [
+                (p
+                  [
+                    (attrs.classes [
+                      "!mb-0"
+                      "text-xs"
+                      "uppercase"
+                      "tracking-widest"
+                      "text-stone-500"
+                    ])
+                  ]
+                  [ "Series · ${toString count} parts" ]
+                )
+                (h2
+                  [ (attrs.classes [ "!mt-1" "mb-6" ]) ]
+                  [
+                    (a
+                      [
+                        (attrs.classes [
+                          "text-stone-700"
+                          "hover:text-sky-700"
+                          "dark:text-stone-300"
+                          "dark:hover:text-sky-300"
+                          "no-underline"
+                          "!font-light"
+                        ])
+                        (attrs.href (if url != null then url else first.url))
+                      ]
+                      [ term ]
+                    )
+                  ]
+                )
+                (p
+                  [
+                    (attrs.classes [
+                      "mb-2"
+                      "text-stone-900"
+                      "dark:text-stone-200"
+                    ])
+                  ]
+                  [
+                    "Updated on ${date}"
+                    (lib.optionalString addedLater " · Part ${toString count} added")
+                  ]
+                )
+              ]
+            )
+            (div [ ] [ (lib.replaceStrings [ "<p>" "</p>" ] [ "" "" ] first.summary) ])
+            (lib.tags.ol
+              [
+                (attrs.classes [
+                  "not-prose"
+                  "my-6"
+                  "pl-4"
+                  "border-l-2"
+                  "border-stone-300"
+                  "dark:border-stone-700"
+                  "space-y-1"
+                ])
+              ]
+              (
+                lib.imap1 (
+                  i: part:
+                  lib.tags.li
+                    [ ]
+                    [
+                      (span [ (attrs.classes [ "text-stone-500" ]) ] [ "${toString i}. " ])
+                      (a
+                        [
+                          (attrs.classes [
+                            "text-stone-700"
+                            "hover:text-sky-700"
+                            "dark:text-stone-300"
+                            "dark:hover:text-sky-300"
+                          ])
+                          (attrs.href part.url)
+                        ]
+                        [ (partTitle part.title) ]
+                      )
+                    ]
+                ) items
+              )
+            )
+            (div
+              [
+                (attrs.classes [ "my-4" ])
+              ]
+              [
+                (a
+                  [
+                    (attrs.href first.url)
+                  ]
+                  [ (lib.escapeHTML "Start reading >") ]
                 )
               ]
             )

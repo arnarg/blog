@@ -53,6 +53,8 @@
               "tags"
               "series"
             ];
+            # Show each series as a single entry on the home page.
+            groupBy = "series";
           };
 
           imports = [ ./theme.nix ];
