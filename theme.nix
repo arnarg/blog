@@ -626,7 +626,7 @@ in
       style = [
         { name = "catppuccin-latte"; }
         {
-          name = "catppuccin-mocha";
+          name = "gruvbox-dark-medium";
           media = "prefers-color-scheme: dark";
         }
       ];
