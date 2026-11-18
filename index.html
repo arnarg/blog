@@ -60,130 +60,16 @@
 				<section>
 					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
 						<header>
-							<h2 class="my-6">
-								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixidy-part-6-ci-workflow">
-									nixidy part 6: CI integration and the promotion workflow
-								</a>
-							</h2>
-							<p class="mb-2 text-stone-900 dark:text-stone-200">
-								Posted on Jun 8, 2026
+							<p class="!mb-0 text-xs uppercase tracking-widest text-stone-500">
+								Series · 6 parts
 							</p>
-						</header>
-						<div>
-							Every change we've made so far has been local: edit a Nix file, run <code>nixidy build</code>, inspect <code>result/</code>, run <code>nixidy switch</code>
-							to copy manifests into the repo, commit, push. That workflow works for one person. It breaks the moment a second person needs to review what's being deployed, because they see a Nix diff, not a YAML diff, and they have to trust that <code>nixidy build</code>
-							produces what they expect.
-							The rendered manifests pattern exists to solve this. CI builds the YAML from the Nix files and commits it to a known location in the repository (a promotion branch, a subdirectory on main, or a separate repository entirely). The reviewer sees a plain <code>git diff</code>
-							of Kubernetes YAML. Argo CD picks up the change and deploys it. The Nix files are the source of truth; the YAML is the review artifact.
-						</div>
-						<div class="my-4">
-							<a href="/posts/nixidy-part-6-ci-workflow">
-								Read more &gt;
-							</a>
-						</div>
-					</article>
-					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
-						<header>
-							<h2 class="my-6">
-								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixidy-part-5-assertions-and-warnings">
-									nixidy part 5: Build-time assertions and warnings
+							<h2 class="!mt-1 mb-6">
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/series/nixidy/">
+									nixidy
 								</a>
 							</h2>
 							<p class="mb-2 text-stone-900 dark:text-stone-200">
-								Posted on Jun 8, 2026
-							</p>
-						</header>
-						<div>
-							Type checking catches the wrong shape of data: a string where an integer belongs, a missing required field. But it can't catch semantic errors like a production Deployment with zero replicas, a namespace that isn't being created, or two applications that must always be deployed together. These are invariants about the cluster configuration that no schema can express.
-							nixidy borrows the NixOS assertion and warning system for exactly this. Assertions are build-time hard constraints: if one fails, the build stops. Warnings are advisory, they print to stderr but don't block the build. Both are evaluated during <code>nixidy build</code>, before any YAML reaches the repository or the cluster.
-						</div>
-						<div class="my-4">
-							<a href="/posts/nixidy-part-5-assertions-and-warnings">
-								Read more &gt;
-							</a>
-						</div>
-					</article>
-					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
-						<header>
-							<h2 class="my-6">
-								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixidy-part-4-typed-resource-options">
-									nixidy part 4: Typed resource options and CRD generation
-								</a>
-							</h2>
-							<p class="mb-2 text-stone-900 dark:text-stone-200">
-								Posted on Jun 8, 2026
-							</p>
-						</header>
-						<div>
-							Every Kubernetes resource we've defined so far (Deployments, Services, Ingresses, Namespaces, ConfigMaps) has been typed. We didn't install anything extra to make that happen, nixidy ships with typed options for all core Kubernetes resources, generated from the official JSON schemas. When I write <code>replicas = 3</code>, the module system checks that <code>3</code>
-							is an integer. When I write <code>replicas = "three"</code>, the build fails with a type error naming the exact option and the type it expected.
-							That type checking extends beyond built-in resources too. nixidy includes a code generator that produces typed Nix options from any Custom Resource Definition, so my Cilium network policies, cert-manager certificates, and Prometheus service monitors get the same build-time validation as a plain Deployment. This part covers how the built-in types work under the hood, how to generate types from CRDs, and how to handle resources that don't fit the typed model.
-						</div>
-						<div class="my-4">
-							<a href="/posts/nixidy-part-4-typed-resource-options">
-								Read more &gt;
-							</a>
-						</div>
-					</article>
-					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
-						<header>
-							<h2 class="my-6">
-								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixidy-part-3-reusable-templates">
-									nixidy part 3: Reusable templates for recurring application patterns
-								</a>
-							</h2>
-							<p class="mb-2 text-stone-900 dark:text-stone-200">
-								Posted on Jun 8, 2026
-							</p>
-						</header>
-						<div>
-							The third time I write a Deployment + Service + Ingress trio I start to notice the shape: selector labels that match the pod template labels, a service port that mirrors the container port, an ingress that references the service by name. Every field is wired to every other field, and a typo in one label breaks the chain silently. By the fifth web application I'm copying an existing module and changing five values and hoping I changed all five.
-							nixidy's template system captures that pattern once, with typed options for the variables and an <code>output</code>
-							function that generates the resources. I can instantiate it with different <code>image</code>, <code>port</code>, and <code>replicas</code>
-							values and get a complete application each time. No duplication, no missed wiring.
-						</div>
-						<div class="my-4">
-							<a href="/posts/nixidy-part-3-reusable-templates">
-								Read more &gt;
-							</a>
-						</div>
-					</article>
-					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
-						<header>
-							<h2 class="my-6">
-								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixidy-part-2-multi-env-and-helm-charts">
-									nixidy part 2: Multi-environments and Helm charts
-								</a>
-							</h2>
-							<p class="mb-2 text-stone-900 dark:text-stone-200">
-								Posted on Jun 8, 2026
-							</p>
-						</header>
-						<div>
-							In <a href="../nixidy-part-1-introduction/">the previous part</a>
-							we created a single nixidy application. The nginx <code>Deployment</code>
-							in <code>dev.nix</code>
-							is 20 lines. When I add <code>staging.nix</code>
-							and <code>prod.nix</code>
-							I'll have three copies of those 20 lines, and they'll be identical except for <code>replicas</code>
-							and maybe an annotation or two. Change the container port in one, forget it in another, and I've got a silent divergence that no CI check will catch.
-							The NixOS module system solves this the same way it solves duplicate NixOS host configs: shared base modules, <code>imports</code>, and priority primitives that let me express "same app, different scale" in two lines instead of a full file copy. This part covers that composition, then adds a Helm chart to the mix (because most real clusters run at least one piece of software that only ships as a Helm chart).
-						</div>
-						<div class="my-4">
-							<a href="/posts/nixidy-part-2-multi-env-and-helm-charts">
-								Read more &gt;
-							</a>
-						</div>
-					</article>
-					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
-						<header>
-							<h2 class="my-6">
-								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixidy-part-1-introduction">
-									nixidy part 1: Introduction to nixidy
-								</a>
-							</h2>
-							<p class="mb-2 text-stone-900 dark:text-stone-200">
-								Posted on Jun 8, 2026
+								Updated on Jun 8, 2026
 							</p>
 						</header>
 						<div>
@@ -193,9 +79,59 @@
 							is meant to close. I wrote it to replace Helm value files, Kustomize overlays, and raw YAML with a single Nix expression per environment. Every field is typed, every build is reproducible, and the output is plain YAML you can <code>git diff</code>
 							before it ever touches a cluster.
 						</div>
+						<ol class="not-prose my-6 pl-4 border-l-2 border-stone-300 dark:border-stone-700 space-y-1">
+							<li>
+								<span class="text-stone-500">
+									1.
+								</span>
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300" href="/posts/nixidy-part-1-introduction">
+									Introduction to nixidy
+								</a>
+							</li>
+							<li>
+								<span class="text-stone-500">
+									2.
+								</span>
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300" href="/posts/nixidy-part-2-multi-env-and-helm-charts">
+									Multi-environments and Helm charts
+								</a>
+							</li>
+							<li>
+								<span class="text-stone-500">
+									3.
+								</span>
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300" href="/posts/nixidy-part-3-reusable-templates">
+									Reusable templates for recurring application patterns
+								</a>
+							</li>
+							<li>
+								<span class="text-stone-500">
+									4.
+								</span>
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300" href="/posts/nixidy-part-4-typed-resource-options">
+									Typed resource options and CRD generation
+								</a>
+							</li>
+							<li>
+								<span class="text-stone-500">
+									5.
+								</span>
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300" href="/posts/nixidy-part-5-assertions-and-warnings">
+									Build-time assertions and warnings
+								</a>
+							</li>
+							<li>
+								<span class="text-stone-500">
+									6.
+								</span>
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300" href="/posts/nixidy-part-6-ci-workflow">
+									CI integration and the promotion workflow
+								</a>
+							</li>
+						</ol>
 						<div class="my-4">
 							<a href="/posts/nixidy-part-1-introduction">
-								Read more &gt;
+								Start reading &gt;
 							</a>
 						</div>
 					</article>
@@ -240,15 +176,72 @@
 							</a>
 						</div>
 					</article>
+					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
+						<header>
+							<h2 class="my-6">
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/writing-keyboard-remapper-wayland">
+									I wrote a keyboard remapper for wayland
+								</a>
+							</h2>
+							<p class="mb-2 text-stone-900 dark:text-stone-200">
+								Posted on Apr 11, 2020
+							</p>
+						</header>
+						<div>
+							Recently I bought a new laptop with the intention of running Linux with Sway as my WM. This is the setup I run on my workstation where I have a 60% keyboard on which I use caps lock as a function key for a second layer.
+							Because muscle memory is a thing I have been using Karabiner Elements to remap the keyboard on my work macbook pro but I could not find a suitable alternative for Linux when using a Wayland compositor.
+						</div>
+						<div class="my-4">
+							<a href="/posts/writing-keyboard-remapper-wayland">
+								Read more &gt;
+							</a>
+						</div>
+					</article>
+					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
+						<header>
+							<h2 class="my-6">
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/nixos-terramaster-f2-221">
+									Running NixOS on a consumer NAS
+								</a>
+							</h2>
+							<p class="mb-2 text-stone-900 dark:text-stone-200">
+								Posted on Feb 2, 2020
+							</p>
+						</header>
+						<div>
+							I have an old whitebox server sporting a Xeon E5 (v1) that I'd like to get rid of. It's running a handful of VMs on Proxmox. Most of them I can get rid of by moving their services to Kubernetes, but I wasn't sure what I wanted to do with my NAS VM and Plex server. The latter you can easily run in Kubernetes but I'm not planning on having particularly powerful nodes and I need transcoding.
+						</div>
+						<div class="my-4">
+							<a href="/posts/nixos-terramaster-f2-221">
+								Read more &gt;
+							</a>
+						</div>
+					</article>
+					<article class="text-stone-700 dark:text-stone-400 max-w-3xl mb-12">
+						<header>
+							<h2 class="my-6">
+								<a class="text-stone-700 hover:text-sky-700 dark:text-stone-300 dark:hover:text-sky-300 no-underline !font-light" href="/posts/mainline-linux-on-tx3-mini">
+									TX3 Mini: Mainline Linux on an Android TV Box
+								</a>
+							</h2>
+							<p class="mb-2 text-stone-900 dark:text-stone-200">
+								Posted on Mar 26, 2019
+							</p>
+						</header>
+						<div>
+							I've always found Raspberry Pi cases and the Pi's connector locations to be rather aesthetically unpleasing, with the power connector coming out from the side and the ethernet from the back (or vice versa). Imagine my excitement when I was browsing the <a href="https://github.com/torvalds/linux">github mirror of Linux</a>
+							(as you do) and I ran into a dts for an Android TV box called Tanix TX3 Mini.
+						</div>
+						<div class="my-4">
+							<a href="/posts/mainline-linux-on-tx3-mini">
+								Read more &gt;
+							</a>
+						</div>
+					</article>
 					<div class="grid grid-cols-3">
 
 						<div class="col-start-2 text-center">
-							Page 1 of 2
-						</div>
-						<div class="col-start-3">
-							<a class="float-right" href="/page/2">
-								Next &gt;
-							</a>
+							Page 1 of 1
 						</div>
 					</div>
 				</section>
