@@ -38,6 +38,11 @@ div[class="highlight"] {
 	@apply relative;
 	border-radius: 6px;
 
+	/* On small screens, run code blocks to the edge of the screen through
+	   the page's side padding (px-4). The code keeps its own 1rem padding,
+	   so it lines up with the text around it. */
+	@apply max-sm:-mx-4 max-sm:rounded-none;
+
 	& pre {
 		/* Typography forces a dark pre background even in light mode. Let
 		   the pygments style on .highlight provide the colorscheme instead. */
@@ -75,6 +80,8 @@ div[class="highlight"] {
 	--copy-code-offset: calc(0.8571429em + 0.5lh - var(--copy-code-size) / 2);
 	top: var(--copy-code-offset);
 	right: var(--copy-code-offset);
+	/* Keep it clear of the screen edge when code blocks run full width. */
+	@apply max-sm:right-[calc(var(--copy-code-offset)_+_0.5rem)];
 	width: var(--copy-code-size);
 	height: var(--copy-code-size);
 	font-size: 0.875em;
